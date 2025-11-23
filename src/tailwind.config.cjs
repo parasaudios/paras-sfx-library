@@ -2,11 +2,13 @@
 module.exports = {
   content: [
     './index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
     './App.tsx',
     './main.tsx',
-    './components/**/*.{ts,tsx}',
-    './utils/**/*.{ts,tsx}',
-    './types/**/*.{ts,tsx}',
+    './components/**/*.{js,ts,jsx,tsx}',
+    './utils/**/*.{js,ts,jsx,tsx}',
+    './types/**/*.{js,ts,jsx,tsx}',
+    './**/*.{js,ts,jsx,tsx}',
   ],
   darkMode: ['class'],
   theme: {

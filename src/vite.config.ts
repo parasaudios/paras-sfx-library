@@ -10,9 +10,6 @@ export default defineConfig({
       '@': path.resolve(__dirname, './'),
     },
   },
-  css: {
-    postcss: './postcss.config.cjs',
-  },
   build: {
     outDir: 'build',
     sourcemap: false,
