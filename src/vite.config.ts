@@ -10,10 +10,13 @@ export default defineConfig({
       '@': path.resolve(__dirname, './'),
     },
   },
+  css: {
+    postcss: './postcss.config.cjs',
+  },
   build: {
     outDir: 'build',
     sourcemap: false,
-    cssMinify: false, // Disable CSS minification to debug
+    cssMinify: false,
     rollupOptions: {
       output: {
         manualChunks: {
