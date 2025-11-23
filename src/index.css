@@ -428,12 +428,12 @@
   }
 
   * {
-    border-color: oklch(.922 0 0);
+    border-color: hsl(var(--border));
   }
 
   body {
-    background-color: oklch(1 0 0);
-    color: oklch(.145 0 0);
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 }
 
