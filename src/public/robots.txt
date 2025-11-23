@@ -1,0 +1,14 @@
+# Para's SFX Library - Robots.txt
+
+User-agent: *
+Allow: /
+
+# Disallow admin routes from search engines
+Disallow: /admin
+Disallow: /login
+
+# Sitemap location
+Sitemap: https://paras-sfx-library.vercel.app/sitemap.xml
+
+# Crawl-delay (optional - prevents aggressive crawling)
+Crawl-delay: 1
