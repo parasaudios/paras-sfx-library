@@ -9,6 +9,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { GoogleDriveAudioPlayer } from './components/GoogleDriveAudioPlayer';
 import { BrowseByTags } from './components/BrowseByTags';
 import { AgeVerification } from './components/AgeVerification';
+import { Toaster } from './components/ui/sonner';
 import { searchSounds } from './utils/searchUtils';
 import { isAgeVerified, setAgeVerified, filterNSFWSounds, isNSFW } from './utils/ageVerification';
 import * as api from './utils/api';
@@ -414,6 +415,9 @@ export default function App() {
           </div>
         </div>
       </div>
+      
+      {/* Toast notifications */}
+      <Toaster />
     </div>
   );
 }
