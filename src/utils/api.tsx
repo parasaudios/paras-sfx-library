@@ -1,5 +1,5 @@
 import { projectId, publicAnonKey } from './supabase/info';
-import type { Sound, Suggestion } from '../types';
+import type { Sound, Suggestion } from '../types/index';
 
 const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-27929102`;
 

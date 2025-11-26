@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { LogOut, Plus, List, Search, MessageSquare, Database, Tag } from 'lucide-react';
 import { ManageSounds } from './ManageSounds';
 import { SearchSounds } from './SearchSounds';

@@ -1,16 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    './index.html',
-    './src/**/*.{js,ts,jsx,tsx}',
-    './App.tsx',
-    './main.tsx',
-    './components/**/*.{js,ts,jsx,tsx}',
-    './utils/**/*.{js,ts,jsx,tsx}',
-    './types/**/*.{js,ts,jsx,tsx}',
-    './**/*.{js,ts,jsx,tsx}',
+    './**/*.{html,js,ts,jsx,tsx}',
   ],
-  darkMode: ['class'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -69,5 +62,5 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [require('tailwindcss-animate')],
 }

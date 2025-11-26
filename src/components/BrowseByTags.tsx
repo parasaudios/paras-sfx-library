@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { capitalizeWords } from '../utils/formatters';
 import { formatTagForDisplay } from '../utils/tagUtils';

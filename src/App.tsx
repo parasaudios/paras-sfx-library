@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
@@ -9,13 +9,30 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { GoogleDriveAudioPlayer } from './components/GoogleDriveAudioPlayer';
 import { BrowseByTags } from './components/BrowseByTags';
 import { AgeVerification } from './components/AgeVerification';
+import { TestHtmlWrapper } from './components/TestHtmlWrapper';
+import { TailwindTestPage } from './components/TailwindTestPage';
 import { Toaster } from './components/ui/sonner';
 import { searchSounds } from './utils/searchUtils';
 import { isAgeVerified, setAgeVerified, filterNSFWSounds, isNSFW } from './utils/ageVerification';
 import * as api from './utils/api';
-import type { Sound } from './types';
+import type { Sound } from './types/index';
 
 export default function App() {
+  // Check if test mode is enabled via URL parameter
+  console.log('Full URL:', window.location.href);
+  console.log('Search string:', window.location.search);
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  console.log('URLSearchParams object:', urlParams.toString());
+  console.log('test param value:', urlParams.get('test'));
+  console.log('test param value type:', typeof urlParams.get('test'));
+  
+  const isTestMode = urlParams.get('test') === 'true';
+  
+  console.log('URL search params:', window.location.search);
+  console.log('Test mode enabled:', isTestMode);
+  console.log('isTestMode type:', typeof isTestMode);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<Sound[]>([]);
@@ -28,6 +45,11 @@ export default function App() {
   const [ageVerified, setAgeVerifiedState] = useState(isAgeVerified());
   const [showAgeVerification, setShowAgeVerification] = useState(false);
   const [pendingSearch, setPendingSearch] = useState<string | null>(null);
+  
+  // If test mode, show the test HTML page (early return after hooks)
+  if (isTestMode) {
+    return <TailwindTestPage />;
+  }
   
   // Load sounds from API on mount
   useEffect(() => {
