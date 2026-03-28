@@ -1,80 +1,116 @@
-import * as kv from './kv_store.tsx';
+import { supabase } from './db.tsx';
 
-interface Suggestion {
+export interface Suggestion {
+  id: string;
+  sound_name: string;
+  description: string | null;
+  category: string | null;
+  reference_url: string | null;
+  submitted_by: string | null;
+  submitter_name: string | null;
+  submitter_email: string | null;
+  status: string;
+  review_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Frontend-compatible shape (camelCase)
+export interface SuggestionResponse {
   id: string;
   soundName: string;
-  category: string;
   description: string;
+  category: string;
+  status: string;
   submittedAt: string;
   isRead: boolean;
 }
 
-const SUGGESTIONS_PREFIX = 'suggestion:';
-
-export async function getAllSuggestions(): Promise<Suggestion[]> {
-  try {
-    const suggestions = await kv.getByPrefix(SUGGESTIONS_PREFIX);
-    return suggestions.sort((a, b) => {
-      // Unread first
-      if (a.isRead !== b.isRead) {
-        return a.isRead ? 1 : -1;
-      }
-      // Then by date (newest first)
-      return new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime();
-    });
-  } catch (error) {
-    console.error('Error getting all suggestions:', error);
-    return [];
-  }
-}
-
-export async function getSuggestion(id: string): Promise<Suggestion | null> {
-  try {
-    return await kv.get(`${SUGGESTIONS_PREFIX}${id}`);
-  } catch (error) {
-    console.error('Error getting suggestion:', error);
-    return null;
-  }
-}
-
-export async function createSuggestion(suggestion: Omit<Suggestion, 'id'>): Promise<Suggestion> {
-  const id = `suggestion-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-  const newSuggestion: Suggestion = {
-    id,
-    ...suggestion,
-    submittedAt: suggestion.submittedAt || new Date().toISOString(),
-    isRead: false
+function toResponse(row: Suggestion): SuggestionResponse {
+  return {
+    id: row.id,
+    soundName: row.sound_name,
+    description: row.description || '',
+    category: row.category || 'General',
+    status: row.status,
+    submittedAt: row.created_at,
+    isRead: row.status !== 'pending',
   };
-  
-  await kv.set(`${SUGGESTIONS_PREFIX}${id}`, newSuggestion);
-  console.log('Created suggestion:', newSuggestion);
-  return newSuggestion;
 }
 
-export async function updateSuggestion(id: string, updates: Partial<Suggestion>): Promise<Suggestion | null> {
-  const existing = await getSuggestion(id);
-  if (!existing) {
-    return null;
+export async function getAllSuggestions(): Promise<SuggestionResponse[]> {
+  const { data, error } = await supabase()
+    .from('suggestions')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data || []).map(toResponse);
+}
+
+export async function getSuggestion(id: string): Promise<SuggestionResponse | null> {
+  const { data, error } = await supabase()
+    .from('suggestions')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data ? toResponse(data) : null;
+}
+
+export async function createSuggestion(input: {
+  soundName: string;
+  category?: string;
+  description?: string;
+}): Promise<SuggestionResponse> {
+  const { data, error } = await supabase()
+    .from('suggestions')
+    .insert({
+      sound_name: input.soundName,
+      category: input.category || 'General',
+      description: input.description || '',
+      status: 'pending',
+    })
+    .select('*')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return toResponse(data);
+}
+
+export async function updateSuggestion(id: string, updates: {
+  isRead?: boolean;
+  soundName?: string;
+  category?: string;
+  description?: string;
+}): Promise<SuggestionResponse | null> {
+  const dbUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+  if (updates.isRead !== undefined) {
+    dbUpdates.status = updates.isRead ? 'reviewed' : 'pending';
   }
-  
-  const updated: Suggestion = {
-    ...existing,
-    ...updates,
-    id: existing.id, // Ensure ID doesn't change
-  };
-  
-  await kv.set(`${SUGGESTIONS_PREFIX}${id}`, updated);
-  console.log('Updated suggestion:', updated);
-  return updated;
+  if (updates.soundName !== undefined) dbUpdates.sound_name = updates.soundName;
+  if (updates.category !== undefined) dbUpdates.category = updates.category;
+  if (updates.description !== undefined) dbUpdates.description = updates.description;
+
+  const { data, error } = await supabase()
+    .from('suggestions')
+    .update(dbUpdates)
+    .eq('id', id)
+    .select('*')
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data ? toResponse(data) : null;
 }
 
 export async function deleteSuggestion(id: string): Promise<boolean> {
-  try {
-    await kv.del(`${SUGGESTIONS_PREFIX}${id}`);
-    console.log('Deleted suggestion:', id);
-    return true;
-  } catch (error) {
-    console.error('Error deleting suggestion:', error);
-    return false;
-  }
+  const { error, count } = await supabase()
+    .from('suggestions')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw new Error(error.message);
+  return (count ?? 0) > 0;
 }

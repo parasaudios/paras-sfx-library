@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search } from 'lucide-react';
 import { Button } from './components/ui/button';
@@ -39,30 +39,118 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [allSounds, setAllSounds] = useState<Sound[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [soundCount, setSoundCount] = useState<number>(0);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [countLoading, setCountLoading] = useState(true);
   const [showTags, setShowTags] = useState(false);
   const [managedTags, setManagedTags] = useState<string[]>([]);
   const [ageVerified, setAgeVerifiedState] = useState(isAgeVerified());
   const [showAgeVerification, setShowAgeVerification] = useState(false);
   const [pendingSearch, setPendingSearch] = useState<string | null>(null);
-  
+  const [visibleCount, setVisibleCount] = useState(30);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalSounds, setTotalSounds] = useState(0);
+  const [isViewAll, setIsViewAll] = useState(false);
+  const loadingMoreRef = useRef(false);
+  const currentPageRef = useRef(0);
+  const totalSoundsRef = useRef(0);
+  const resultsLengthRef = useRef(0);
+  const isViewAllRef = useRef(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Keep refs in sync with state
+  useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
+  useEffect(() => { totalSoundsRef.current = totalSounds; }, [totalSounds]);
+  useEffect(() => { resultsLengthRef.current = results.length; }, [results]);
+  useEffect(() => { isViewAllRef.current = isViewAll; }, [isViewAll]);
+
+  // Cleanup observer on unmount
+  useEffect(() => {
+    return () => { observerRef.current?.disconnect(); };
+  }, []);
+
+  // Callback ref for sentinel — fires every time the element mounts/unmounts
+  const sentinelRef = useCallback((node: HTMLDivElement | null) => {
+    // Disconnect previous observer
+    observerRef.current?.disconnect();
+
+    if (!node) return;
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          if (isViewAllRef.current) {
+            if (!loadingMoreRef.current && resultsLengthRef.current < totalSoundsRef.current) {
+              loadingMoreRef.current = true;
+              const nextPage = currentPageRef.current + 1;
+              setLoadingMore(true);
+              api.getSounds(nextPage, 30).then(({ data }) => {
+                if (data.length > 0) {
+                  setResults(prev => [...prev, ...data]);
+                  setCurrentPage(nextPage);
+                }
+                loadingMoreRef.current = false;
+                setLoadingMore(false);
+              });
+            }
+          } else {
+            setVisibleCount(prev => prev + 30);
+          }
+        }
+      },
+      { rootMargin: '400px' }
+    );
+
+    observerRef.current.observe(node);
+  }, []);
+
   // If test mode, show the test HTML page (early return after hooks)
   if (isTestMode) {
     return <TailwindTestPage />;
   }
-  
-  // Load sounds from API on mount
+
+  // Load just the count + tags on mount (lightweight)
   useEffect(() => {
-    loadSounds();
+    loadSoundCount();
     loadManagedTags();
   }, []);
+
+  const loadSoundCount = async () => {
+    setCountLoading(true);
+    try {
+      const count = await api.getSoundCount();
+      setSoundCount(count);
+    } catch (error) {
+      console.error('Failed to load sound count:', error);
+    } finally {
+      setCountLoading(false);
+    }
+  };
+
+  // Load all sounds only when needed (search or view all)
+  const ensureSoundsLoaded = async (): Promise<Sound[]> => {
+    if (allSounds.length > 0) return allSounds;
+    setLoading(true);
+    try {
+      const sounds = await api.getAllSounds();
+      setAllSounds(sounds);
+      setSoundCount(sounds.length);
+      return sounds;
+    } catch (error) {
+      console.error('Failed to load sounds:', error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadSounds = async () => {
     setLoading(true);
     try {
       const sounds = await api.getAllSounds();
-      console.log('Loaded sounds from API:', sounds);
       setAllSounds(sounds);
+      setSoundCount(sounds.length);
     } catch (error) {
       console.error('Failed to load sounds:', error);
     } finally {
@@ -80,23 +168,25 @@ export default function App() {
     }
   };
 
-  const handleSearch = useCallback(() => {
+  const handleSearch = useCallback(async () => {
     if (searchQuery.trim()) {
-      const matchedResults = searchSounds(allSounds, searchQuery);
-      
+      const sounds = await ensureSoundsLoaded();
+      const matchedResults = searchSounds(sounds, searchQuery);
+
       // Check if any result contains NSFW content
       const hasNSFWContent = matchedResults.some(sound => isNSFW(sound.tags));
-      
+
       if (hasNSFWContent && !ageVerified) {
         // Store pending search and show age verification
         setPendingSearch(searchQuery);
         setShowAgeVerification(true);
         return;
       }
-      
+
       // Filter NSFW content if not verified
       const filteredResults = filterNSFWSounds(matchedResults, ageVerified);
       setResults(filteredResults);
+      setVisibleCount(30);
       setShowResults(true);
     }
   }, [searchQuery, allSounds, ageVerified]);
@@ -110,22 +200,27 @@ export default function App() {
   const handleNewSearch = () => {
     setShowResults(false);
     setSearchQuery('');
+    setIsViewAll(false);
+    setCurrentPage(0);
+    setResults([]);
   };
 
-  const handleShowAll = () => {
-    // Check if library contains NSFW content
-    const hasNSFWContent = allSounds.some(sound => isNSFW(sound.tags));
-    
-    if (hasNSFWContent && !ageVerified) {
-      setPendingSearch('__VIEW_ALL__');
-      setShowAgeVerification(true);
-      return;
-    }
-    
-    const filteredSounds = filterNSFWSounds(allSounds, ageVerified);
-    setResults(filteredSounds);
+  const handleShowAll = async () => {
+    setLoading(true);
+    setIsViewAll(true);
     setSearchQuery('');
-    setShowResults(true);
+    setCurrentPage(0);
+    try {
+      const { data, total } = await api.getSounds(0, 30);
+      const filteredSounds = filterNSFWSounds(data, ageVerified);
+      setResults(filteredSounds);
+      setTotalSounds(total);
+      setShowResults(true);
+    } catch (error) {
+      console.error('Failed to load sounds:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const scrollToForm = () => {
@@ -151,29 +246,31 @@ export default function App() {
   };
 
   // Handle clicking on a tag
-  const handleTagClick = (tag: string) => {
+  const handleTagClick = async (tag: string) => {
     setShowTags(false);
-    
+
     // If "All Sounds" is clicked, show all sounds
     if (tag.toLowerCase() === 'all sounds') {
       handleShowAll();
       return;
     }
-    
+
+    const sounds = await ensureSoundsLoaded();
     setSearchQuery(tag);
-    const matchedResults = searchSounds(allSounds, tag);
-    
+    const matchedResults = searchSounds(sounds, tag);
+
     // Check if results contain NSFW content
     const hasNSFWContent = matchedResults.some(sound => isNSFW(sound.tags));
-    
+
     if (hasNSFWContent && !ageVerified) {
       setPendingSearch(tag);
       setShowAgeVerification(true);
       return;
     }
-    
+
     const filteredResults = filterNSFWSounds(matchedResults, ageVerified);
     setResults(filteredResults);
+    setVisibleCount(30);
     setShowResults(true);
   };
 
@@ -370,7 +467,7 @@ export default function App() {
                     className="mt-6 text-center"
                   >
                     <p className="text-slate-400 mb-2 text-sm sm:text-base">
-                      {loading ? 'Loading...' : `${allSounds.length} sounds in library`}
+                      {countLoading ? 'Loading...' : `${soundCount} sounds in library`}
                     </p>
                     <button
                       onClick={handleShowAll}
@@ -394,7 +491,9 @@ export default function App() {
                   <h2 className="text-white mb-2 text-xl sm:text-2xl">
                     {searchQuery ? `Search Results for "${searchQuery}"` : 'All Sounds'}
                   </h2>
-                  <p className="text-slate-400 text-sm sm:text-base">Found {results.length} tracks</p>
+                  <p className="text-slate-400 text-sm sm:text-base">
+                    {isViewAll ? `Found ${totalSounds} tracks` : `Found ${results.length} tracks`}
+                  </p>
                 </div>
 
                 {/* Browse by Tags on Results Page */}
@@ -405,20 +504,27 @@ export default function App() {
                   onTagClick={handleTagClick}
                 />
 
-                {results.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-6 sm:mt-8">
-                    {results.map((result, index) => (
-                      <GoogleDriveAudioPlayer
-                        key={result.id}
-                        title={result.title}
-                        audioUrl={result.audioUrl}
-                        tags={result.tags}
-                        equipment={result.equipment}
-                        format={result.format}
-                        index={index}
-                      />
-                    ))}
+                {loading ? (
+                  <div className="text-center py-12 sm:py-16">
+                    <p className="text-slate-400 text-base sm:text-lg">Loading sounds...</p>
                   </div>
+                ) : results.length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-6 sm:mt-8">
+                      {(isViewAll ? results : results.slice(0, visibleCount)).map((result, index) => (
+                        <GoogleDriveAudioPlayer
+                          key={result.id}
+                          sound={result}
+                          index={index}
+                        />
+                      ))}
+                    </div>
+                    {(isViewAll ? results.length < totalSounds : visibleCount < results.length) && (
+                      <div ref={sentinelRef} className="h-10 flex items-center justify-center">
+                        {loadingMore && <p className="text-slate-500 text-sm">Loading more...</p>}
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="text-center py-12 sm:py-16">
                     <p className="text-slate-400 text-base sm:text-lg mb-4">No results found</p>

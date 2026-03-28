@@ -1,7 +1,6 @@
 import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
-import * as kv from "./kv_store.tsx";
 import * as sounds from "./sounds.tsx";
 import * as suggestions from "./suggestions.tsx";
 import * as tags from "./tags.tsx";
@@ -59,20 +58,27 @@ app.get("/make-server-27929102/sounds/:id", async (c) => {
 app.post("/make-server-27929102/sounds", async (c) => {
   try {
     const body = await c.req.json();
-    const { title, audioUrl, tags, equipment, format } = body;
-    
-    if (!title || !audioUrl) {
-      return c.json({ success: false, error: "Missing required fields (title and audioUrl)" }, 400);
+    const { title, tags: inputTags, mp3_path, wav_path, has_wav, file_size, microphone, recorder, format, category, nsfw, description } = body;
+
+    if (!title) {
+      return c.json({ success: false, error: "Missing required field (title)" }, 400);
     }
-    
+
     const newSound = await sounds.createSound({
       title,
-      audioUrl,
-      tags: Array.isArray(tags) ? tags : [],
-      equipment,
+      tags: Array.isArray(inputTags) ? inputTags : [],
+      mp3_path,
+      wav_path,
+      has_wav,
+      file_size,
+      microphone,
+      recorder,
       format,
+      category,
+      nsfw,
+      description,
     });
-    
+
     return c.json({ success: true, sound: newSound }, 201);
   } catch (error) {
     console.error("Error creating sound:", error);
@@ -149,19 +155,17 @@ app.post("/make-server-27929102/suggestions", async (c) => {
   try {
     const body = await c.req.json();
     const { soundName, category, description } = body;
-    
+
     if (!soundName) {
       return c.json({ success: false, error: "Missing required field (soundName)" }, 400);
     }
-    
+
     const newSuggestion = await suggestions.createSuggestion({
       soundName,
-      category: category || '',
+      category: category || 'General',
       description: description || '',
-      submittedAt: new Date().toISOString(),
-      isRead: false,
     });
-    
+
     return c.json({ success: true, suggestion: newSuggestion }, 201);
   } catch (error) {
     console.error("Error creating suggestion:", error);

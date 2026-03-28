@@ -5,15 +5,7 @@ import { Input } from './ui/input';
 import { Search as SearchIcon, X } from 'lucide-react';
 import { GoogleDriveAudioPlayer } from './GoogleDriveAudioPlayer';
 import * as api from '../utils/api';
-
-interface Sound {
-  id: string;
-  title: string;
-  audioUrl: string;
-  tags: string[];
-  equipment?: string;
-  format?: string;
-}
+import type { Sound } from '../types/index';
 
 export function SearchSounds() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,13 +30,13 @@ export function SearchSounds() {
       const matchedResults = customSounds.filter(sfx => {
         const titleLower = sfx.title.toLowerCase();
         const tagsLower = sfx.tags.map(tag => tag.toLowerCase());
-        const equipmentLower = sfx.equipment?.toLowerCase() || '';
+        const microphoneLower = sfx.microphone?.toLowerCase() || '';
         const formatLower = sfx.format?.toLowerCase() || '';
         
         // Check if any search term matches title, tags, equipment, or format
         return searchTerms.some(term => 
-          titleLower.includes(term) || 
-          equipmentLower.includes(term) ||
+          titleLower.includes(term) ||
+          microphoneLower.includes(term) ||
           formatLower.includes(term) ||
           tagsLower.some(tag => tag.includes(term) || term.includes(tag))
         );
@@ -137,11 +129,7 @@ export function SearchSounds() {
               {results.map((result, index) => (
                 <GoogleDriveAudioPlayer
                   key={result.id}
-                  title={result.title}
-                  audioUrl={result.audioUrl}
-                  tags={result.tags}
-                  equipment={result.equipment}
-                  format={result.format}
+                  sound={result}
                   index={index}
                 />
               ))}

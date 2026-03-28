@@ -36,9 +36,8 @@ export function BulkImport({ onImportComplete }: BulkImportProps) {
         try {
           const result = await api.createSound({
             title: sound.title || 'Untitled',
-            audioUrl: sound.audioUrl || sound.url || '',
             tags: Array.isArray(sound.tags) ? sound.tags : [],
-            equipment: sound.equipment,
+            microphone: sound.microphone || sound.equipment,
             format: sound.format,
           });
 
@@ -81,7 +80,7 @@ export function BulkImport({ onImportComplete }: BulkImportProps) {
           <textarea
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
-            placeholder={`[\n  {\n    "title": "Door Creak",\n    "audioUrl": "https://drive.google.com/file/d/YOUR_ID/view",\n    "tags": ["door", "creak", "horror"],\n    "equipment": "Rode NT1-A",\n    "format": "WAV"\n  }\n]`}
+            placeholder={`[\n  {\n    "title": "Door Creak",\n    "tags": ["door", "creak", "horror"],\n    "microphone": "Rode NT1-A",\n    "format": "WAV"\n  }\n]`}
             className="w-full h-64 bg-white/5 border border-white/20 rounded-lg p-4 text-white placeholder:text-slate-500 font-mono text-sm"
           />
         </div>
@@ -103,9 +102,8 @@ export function BulkImport({ onImportComplete }: BulkImportProps) {
 {`[
   {
     "title": "Sound Title",
-    "audioUrl": "https://drive.google.com/...",
     "tags": ["tag1", "tag2"],
-    "equipment": "Microphone Name",
+    "microphone": "Microphone Name",
     "format": "WAV"
   }
 ]`}

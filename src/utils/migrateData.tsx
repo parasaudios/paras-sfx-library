@@ -15,21 +15,20 @@ export async function migrateLocalStorageToSupabase(): Promise<{ success: boolea
 
     // Get existing sounds from API to avoid duplicates
     const existingSounds = await api.getAllSounds();
-    const existingUrls = new Set(existingSounds.map(s => s.audioUrl));
+    const existingTitles = new Set(existingSounds.map(s => s.title.toLowerCase()));
 
     // Migrate sounds that don't already exist
     let migratedCount = 0;
     for (const sound of localSounds) {
-      // Skip if already exists (same URL)
-      if (existingUrls.has(sound.audioUrl)) {
+      // Skip if already exists (same title)
+      if (existingTitles.has(sound.title?.toLowerCase())) {
         continue;
       }
 
       const result = await api.createSound({
         title: sound.title,
-        audioUrl: sound.audioUrl,
         tags: Array.isArray(sound.tags) ? sound.tags : [],
-        equipment: sound.equipment,
+        microphone: sound.equipment || sound.microphone,
         format: sound.format
       });
 
@@ -43,17 +42,17 @@ export async function migrateLocalStorageToSupabase(): Promise<{ success: boolea
       localStorage.removeItem('customSounds');
     }
 
-    return { 
-      success: true, 
-      migrated: migratedCount, 
-      message: `Successfully migrated ${migratedCount} sound(s)` 
+    return {
+      success: true,
+      migrated: migratedCount,
+      message: `Successfully migrated ${migratedCount} sound(s)`
     };
   } catch (error) {
     console.error('Migration error:', error);
-    return { 
-      success: false, 
-      migrated: 0, 
-      message: `Migration failed: ${error}` 
+    return {
+      success: false,
+      migrated: 0,
+      message: `Migration failed: ${error}`
     };
   }
 }

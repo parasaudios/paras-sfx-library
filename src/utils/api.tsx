@@ -1,46 +1,83 @@
+import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from './supabase/info';
 import type { Sound, Suggestion } from '../types/index';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-27929102`;
+const supabase = createClient(
+  `https://${projectId}.supabase.co`,
+  publicAnonKey
+);
 
-async function fetchAPI(endpoint: string, options: RequestInit = {}) {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${publicAnonKey}`,
-      ...options.headers,
-    },
-  });
+// ── Sounds ──────────────────────────────────────────────────────────────────
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    console.error(`API Error [${endpoint}]:`, error);
-    throw new Error(error.error || `HTTP error! status: ${response.status}`);
+export async function getSoundCount(): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from('sounds_with_urls')
+      .select('*', { count: 'exact', head: true });
+
+    if (error) throw error;
+    return count || 0;
+  } catch (error) {
+    console.error('Error fetching sound count:', error);
+    return 0;
   }
-
-  return response.json();
 }
 
 export async function getAllSounds(): Promise<Sound[]> {
   try {
-    const data = await fetchAPI('/sounds');
-    return data.sounds || [];
+    const { data, error } = await supabase
+      .from('sounds_with_urls')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   } catch (error) {
     console.error('Error fetching sounds:', error);
     return [];
   }
 }
 
-export async function createSound(sound: Omit<Sound, 'id'>): Promise<Sound | null> {
+export async function getSounds(page: number = 0, pageSize: number = 30): Promise<{ data: Sound[]; total: number }> {
   try {
-    console.log('Creating sound:', sound);
-    const data = await fetchAPI('/sounds', {
-      method: 'POST',
-      body: JSON.stringify(sound),
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await supabase
+      .from('sounds_with_urls')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+    return { data: data || [], total: count || 0 };
+  } catch (error) {
+    console.error('Error fetching sounds:', error);
+    return { data: [], total: 0 };
+  }
+}
+
+export async function createSound(sound: {
+  title: string;
+  tags?: string[];
+  mp3_path?: string;
+  wav_path?: string;
+  has_wav?: boolean;
+  file_size?: number;
+  microphone?: string;
+  recorder?: string;
+  format?: string;
+  category?: string;
+  nsfw?: boolean;
+  description?: string;
+}): Promise<Sound | null> {
+  try {
+    const { data, error } = await supabase.rpc('admin_create_sound', {
+      input: sound,
     });
-    console.log('Sound created successfully:', data.sound);
-    return data.sound;
+
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error('Error creating sound:', error);
     return null;
@@ -49,13 +86,13 @@ export async function createSound(sound: Omit<Sound, 'id'>): Promise<Sound | nul
 
 export async function updateSound(id: string, updates: Partial<Sound>): Promise<Sound | null> {
   try {
-    console.log('Updating sound:', id, updates);
-    const data = await fetchAPI(`/sounds/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
+    const { data, error } = await supabase.rpc('admin_update_sound', {
+      sound_id: id,
+      updates,
     });
-    console.log('Sound updated successfully:', data.sound);
-    return data.sound;
+
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error('Error updating sound:', error);
     return null;
@@ -64,39 +101,72 @@ export async function updateSound(id: string, updates: Partial<Sound>): Promise<
 
 export async function deleteSound(id: string): Promise<boolean> {
   try {
-    console.log('Deleting sound:', id);
-    await fetchAPI(`/sounds/${id}`, {
-      method: 'DELETE',
+    const { data, error } = await supabase.rpc('admin_soft_delete_sound', {
+      sound_id: id,
     });
-    console.log('Sound deleted successfully');
-    return true;
+
+    if (error) throw error;
+    return data === true;
   } catch (error) {
     console.error('Error deleting sound:', error);
     return false;
   }
 }
 
-// Suggestion API functions
+// ── Suggestions ─────────────────────────────────────────────────────────────
 
 export async function getAllSuggestions(): Promise<Suggestion[]> {
   try {
-    const data = await fetchAPI('/suggestions');
-    return data.suggestions || [];
+    const { data, error } = await supabase
+      .from('suggestions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map((row: any) => ({
+      id: row.id,
+      soundName: row.sound_name,
+      description: row.description || '',
+      category: row.category || 'General',
+      status: row.status,
+      submittedAt: row.created_at,
+      isRead: row.status !== 'pending',
+    }));
   } catch (error) {
     console.error('Error fetching suggestions:', error);
     return [];
   }
 }
 
-export async function createSuggestion(suggestion: Omit<Suggestion, 'id'>): Promise<Suggestion | null> {
+export async function createSuggestion(suggestion: {
+  soundName: string;
+  category?: string;
+  description?: string;
+}): Promise<Suggestion | null> {
   try {
-    console.log('Creating suggestion:', suggestion);
-    const data = await fetchAPI('/suggestions', {
-      method: 'POST',
-      body: JSON.stringify(suggestion),
-    });
-    console.log('Suggestion created successfully:', data.suggestion);
-    return data.suggestion;
+    const { data, error } = await supabase
+      .from('suggestions')
+      .insert({
+        sound_name: suggestion.soundName,
+        category: suggestion.category || 'General',
+        description: suggestion.description || '',
+        status: 'pending',
+      })
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    return {
+      id: data.id,
+      soundName: data.sound_name,
+      description: data.description || '',
+      category: data.category || 'General',
+      status: data.status,
+      submittedAt: data.created_at,
+      isRead: false,
+    };
   } catch (error) {
     console.error('Error creating suggestion:', error);
     return null;
@@ -105,13 +175,13 @@ export async function createSuggestion(suggestion: Omit<Suggestion, 'id'>): Prom
 
 export async function updateSuggestion(id: string, updates: Partial<Suggestion>): Promise<Suggestion | null> {
   try {
-    console.log('Updating suggestion:', id, updates);
-    const data = await fetchAPI(`/suggestions/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
+    const { data, error } = await supabase.rpc('admin_update_suggestion', {
+      suggestion_id: id,
+      updates,
     });
-    console.log('Suggestion updated successfully:', data.suggestion);
-    return data.suggestion;
+
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error('Error updating suggestion:', error);
     return null;
@@ -120,41 +190,43 @@ export async function updateSuggestion(id: string, updates: Partial<Suggestion>)
 
 export async function deleteSuggestion(id: string): Promise<boolean> {
   try {
-    console.log('Deleting suggestion:', id);
-    await fetchAPI(`/suggestions/${id}`, {
-      method: 'DELETE',
+    const { data, error } = await supabase.rpc('admin_delete_suggestion', {
+      suggestion_id: id,
     });
-    console.log('Suggestion deleted successfully');
-    return true;
+
+    if (error) throw error;
+    return data === true;
   } catch (error) {
     console.error('Error deleting suggestion:', error);
     return false;
   }
 }
 
-// Tag API functions
+// ── Tags ────────────────────────────────────────────────────────────────────
 
 export async function getAllTags(): Promise<string[]> {
   try {
-    const data = await fetchAPI('/tags');
-    console.log('Fetched tags from API:', data);
-    return data.tags || [];
+    const { data, error } = await supabase
+      .from('tags')
+      .select('name')
+      .order('name');
+
+    if (error) throw error;
+    return (data || []).map((t: any) => t.name);
   } catch (error) {
     console.error('Error fetching tags:', error);
-    // Return empty array instead of throwing to prevent UI breaks
     return [];
   }
 }
 
 export async function setTags(tags: string[]): Promise<string[]> {
   try {
-    console.log('Setting tags:', tags);
-    const data = await fetchAPI('/tags', {
-      method: 'PUT',
-      body: JSON.stringify({ tags }),
+    const { data, error } = await supabase.rpc('admin_set_tags', {
+      tag_names: tags,
     });
-    console.log('Tags set successfully:', data.tags);
-    return data.tags;
+
+    if (error) throw error;
+    return data || [];
   } catch (error) {
     console.error('Error setting tags:', error);
     return [];
@@ -163,13 +235,12 @@ export async function setTags(tags: string[]): Promise<string[]> {
 
 export async function addTag(tag: string): Promise<string[]> {
   try {
-    console.log('Adding tag:', tag);
-    const data = await fetchAPI('/tags', {
-      method: 'POST',
-      body: JSON.stringify({ tag }),
+    const { data, error } = await supabase.rpc('admin_add_tag', {
+      tag_name: tag,
     });
-    console.log('Tag added successfully:', data.tags);
-    return data.tags;
+
+    if (error) throw error;
+    return data || [];
   } catch (error) {
     console.error('Error adding tag:', error);
     throw error;
@@ -178,12 +249,12 @@ export async function addTag(tag: string): Promise<string[]> {
 
 export async function removeTag(tag: string): Promise<string[]> {
   try {
-    console.log('Removing tag:', tag);
-    const data = await fetchAPI(`/tags/${encodeURIComponent(tag)}`, {
-      method: 'DELETE',
+    const { data, error } = await supabase.rpc('admin_remove_tag', {
+      tag_name: tag,
     });
-    console.log('Tag removed successfully:', data.tags);
-    return data.tags;
+
+    if (error) throw error;
+    return data || [];
   } catch (error) {
     console.error('Error removing tag:', error);
     return [];

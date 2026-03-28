@@ -8,15 +8,7 @@ import { Trash2, Search, X, Save } from 'lucide-react';
 import * as api from '../utils/api';
 import { capitalizeWords } from '../utils/formatters';
 import { formatTagForDisplay } from '../utils/tagUtils';
-
-interface Sound {
-  id: string;
-  title: string;
-  audioUrl: string;
-  tags: string[];
-  equipment?: string;
-  format?: string;
-}
+import type { Sound } from '../types/index';
 
 export function ManageSounds() {
   const [customSounds, setCustomSounds] = useState<Sound[]>([]);
@@ -24,15 +16,13 @@ export function ManageSounds() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     title: '',
-    audioUrl: '',
     tags: '',
-    equipment: '',
+    microphone: '',
     format: ''
   });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Load custom sounds from API
     loadSounds();
   }, []);
 
@@ -44,23 +34,22 @@ export function ManageSounds() {
   // Filter sounds by tag search
   const filteredSounds = customSounds.filter((sound) => {
     if (!searchQuery.trim()) return true;
-    
+
     const searchLower = searchQuery.toLowerCase();
     const titleMatch = sound.title.toLowerCase().includes(searchLower);
     const tagMatch = sound.tags.some(tag => tag.toLowerCase().includes(searchLower));
-    const equipmentMatch = sound.equipment?.toLowerCase().includes(searchLower);
+    const microphoneMatch = sound.microphone?.toLowerCase().includes(searchLower);
     const formatMatch = sound.format?.toLowerCase().includes(searchLower);
-    
-    return titleMatch || tagMatch || equipmentMatch || formatMatch;
+
+    return titleMatch || tagMatch || microphoneMatch || formatMatch;
   });
 
   const handleEdit = (sound: Sound) => {
     setEditingId(sound.id);
-    setEditForm({ 
+    setEditForm({
       title: sound.title,
-      audioUrl: sound.audioUrl,
       tags: sound.tags.join(', '),
-      equipment: sound.equipment || '',
+      microphone: sound.microphone || '',
       format: sound.format || ''
     });
   };
@@ -69,16 +58,15 @@ export function ManageSounds() {
     setEditingId(null);
     setEditForm({
       title: '',
-      audioUrl: '',
       tags: '',
-      equipment: '',
+      microphone: '',
       format: ''
     });
   };
 
   const handleSaveEdit = async () => {
-    if (!editForm.title.trim() || !editForm.audioUrl.trim()) {
-      toast.error('Please fill in all required fields');
+    if (!editForm.title.trim()) {
+      toast.error('Please fill in the title');
       return;
     }
 
@@ -86,28 +74,25 @@ export function ManageSounds() {
     try {
       const updatedData = {
         title: editForm.title,
-        audioUrl: editForm.audioUrl,
         tags: editForm.tags.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag.length > 0),
-        equipment: editForm.equipment || undefined,
+        microphone: editForm.microphone || undefined,
         format: editForm.format || undefined
       };
 
       const result = await api.updateSound(editingId as string, updatedData);
-      
+
       if (result) {
-        // Update local state
         const updatedSounds = customSounds.map((sound) =>
-          sound.id === editingId ? { ...sound, ...updatedData } : sound
+          sound.id === editingId ? { ...sound, ...result } : sound
         );
         setCustomSounds(updatedSounds);
         toast.success('Sound effect updated successfully!');
-        
+
         setEditingId(null);
         setEditForm({
           title: '',
-          audioUrl: '',
           tags: '',
-          equipment: '',
+          microphone: '',
           format: ''
         });
       } else {
@@ -160,7 +145,7 @@ export function ManageSounds() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 size-5" />
               <Input
                 type="text"
-                placeholder="Search by title, tag, equipment, or format..."
+                placeholder="Search by title, tag, microphone, or format..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-11 h-12 bg-white/5 border-white/20 text-white placeholder:text-slate-400"
@@ -222,10 +207,10 @@ export function ManageSounds() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-white">Equipment</Label>
+                      <Label className="text-white">Microphone</Label>
                       <Input
-                        value={editForm.equipment}
-                        onChange={(e) => handleEditFormChange('equipment', e.target.value)}
+                        value={editForm.microphone}
+                        onChange={(e) => handleEditFormChange('microphone', e.target.value)}
                         className="bg-white/5 border-white/20 text-white placeholder:text-slate-400"
                       />
                     </div>
@@ -248,41 +233,33 @@ export function ManageSounds() {
                       />
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-white">Google Drive Link *</Label>
-                    <Input
-                      value={editForm.audioUrl}
-                      onChange={(e) => handleEditFormChange('audioUrl', e.target.value)}
-                      className="bg-white/5 border-white/20 text-white placeholder:text-slate-400"
-                    />
-                  </div>
                 </div>
               ) : (
                 // View Mode
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 space-y-3">
                     <h3 className="text-white mb-3">{sound.title}</h3>
-                    
+
                     <div className="space-y-2 text-slate-300 text-sm">
-                      {sound.equipment && (
+                      {sound.microphone && (
                         <div>
-                          <span className="text-slate-400">Equipment:</span>{' '}
-                          {sound.equipment.split(',').map((item, index) => (
-                            <span key={index}>
-                              {capitalizeWords(item.trim())}
-                              {index < sound.equipment.split(',').length - 1 ? ', ' : ''}
-                            </span>
-                          ))}
+                          <span className="text-slate-400">Microphone:</span>{' '}
+                          {capitalizeWords(sound.microphone)}
                         </div>
                       )}
-                      
+
                       {sound.format && (
                         <div>
                           <span className="text-slate-400">Audio Format:</span> {capitalizeWords(sound.format)}
                         </div>
                       )}
-                      
+
+                      {sound.has_wav && (
+                        <div>
+                          <span className="text-xs bg-green-600/30 text-green-200 px-2 py-0.5 rounded-full">WAV Available</span>
+                        </div>
+                      )}
+
                       {sound.tags.length > 0 && (
                         <div className="flex items-center gap-1 flex-wrap">
                           <span className="text-slate-400">Tags:</span>
@@ -296,10 +273,6 @@ export function ManageSounds() {
                           ))}
                         </div>
                       )}
-                    </div>
-
-                    <div className="text-slate-500 text-sm break-all pt-2">
-                      <strong>URL:</strong> {sound.audioUrl}
                     </div>
                   </div>
 
