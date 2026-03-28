@@ -294,10 +294,7 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
               )}
             </Section>
 
-            {/* System */}
-            <Section title="System">
-              <Row label="Sound ID:" value={`${sound.id.substring(0, 10)}...`} sub />
-            </Section>
+
           </div>
         )}
       </div>
