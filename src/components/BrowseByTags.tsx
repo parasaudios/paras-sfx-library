@@ -43,7 +43,7 @@ export function BrowseByTags({ tags, showTags, onToggle, onTagClick }: BrowseByT
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="mt-3 sm:mt-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 sm:p-6">
+            <div className="mt-3 sm:mt-4 bg-[#141820] border border-[#252a35] rounded-lg p-4 sm:p-6">
               <div className="flex flex-wrap gap-2 justify-center">
                 {allTags.map((tag, index) => (
                   <motion.button
@@ -52,10 +52,10 @@ export function BrowseByTags({ tags, showTags, onToggle, onTagClick }: BrowseByT
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.02 }}
                     onClick={() => onTagClick(tag)}
-                    className={`px-3 sm:px-4 py-1.5 sm:py-2 border rounded-full transition-all text-xs sm:text-sm ${
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 border rounded-md transition-all text-xs sm:text-sm ${
                       tag === 'all sounds'
-                        ? 'bg-blue-600/20 hover:bg-blue-600/40 border-blue-500/30 hover:border-blue-500/50 text-blue-300 hover:text-white'
-                        : 'bg-purple-600/20 hover:bg-purple-600/40 border-purple-500/30 hover:border-purple-500/50 text-purple-300 hover:text-white'
+                        ? 'bg-[#10b981]/15 hover:bg-[#10b981]/25 border-[#10b981]/30 hover:border-[#10b981]/50 text-[#34d399] hover:text-white'
+                        : 'bg-[#1f2430] hover:bg-[#252c3a] border-[#2a3040] hover:border-[#3a4458] text-[#9ca3af] hover:text-white'
                     }`}
                   >
                     {tag === 'all sounds' ? capitalizeWords(tag) : formatTagForDisplay(tag)}

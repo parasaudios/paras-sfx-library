@@ -7,6 +7,43 @@ const supabase = createClient(
   publicAnonKey
 );
 
+// ── Auth ────────────────────────────────────────────────────────────────────
+
+export async function signIn(email: string, password: string) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) throw error;
+
+  // Verify the user has admin role
+  const role = data.user?.app_metadata?.role;
+  if (role !== 'admin') {
+    await supabase.auth.signOut();
+    throw new Error('Access denied: admin privileges required');
+  }
+
+  return data;
+}
+
+export async function signOut() {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+}
+
+export async function getSession() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session;
+}
+
+export function onAuthStateChange(callback: (session: any) => void) {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    (_event, session) => callback(session)
+  );
+  return subscription;
+}
+
 // ── Sounds ──────────────────────────────────────────────────────────────────
 
 export async function getSoundCount(): Promise<number> {
@@ -145,16 +182,11 @@ export async function createSuggestion(suggestion: {
   description?: string;
 }): Promise<Suggestion | null> {
   try {
-    const { data, error } = await supabase
-      .from('suggestions')
-      .insert({
-        sound_name: suggestion.soundName,
-        category: suggestion.category || 'General',
-        description: suggestion.description || '',
-        status: 'pending',
-      })
-      .select('*')
-      .single();
+    const { data, error } = await supabase.rpc('submit_suggestion', {
+      p_sound_name: suggestion.soundName,
+      p_category: suggestion.category || 'General',
+      p_description: suggestion.description || '',
+    });
 
     if (error) throw error;
 

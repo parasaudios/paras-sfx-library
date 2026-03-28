@@ -131,26 +131,26 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
   const channelLabel = sound.channels === 1 ? 'Mono' : sound.channels === 2 ? 'Stereo' : null;
 
   return (
-    <div className="bg-[#1a1a2e]/80 border border-[#2a2a4a] rounded-2xl overflow-hidden" onMouseEnter={handleHover}>
+    <div className="bg-[#181c24] border border-[#252a35] rounded-xl overflow-hidden hover:border-[#2f3645] transition-colors" onMouseEnter={handleHover}>
       <div className="p-5 space-y-3">
 
         {/* Title */}
-        <h3 className="text-[#e2e2f0] text-[15px] font-semibold leading-tight tracking-tight">
+        <h3 className="text-[#e8eaed] text-[15px] font-semibold leading-tight">
           {capitalizeWords(sound.title)}
         </h3>
 
         {/* Player */}
         {isGDrive && embedUrl ? (
-          <div className="rounded-xl overflow-hidden bg-black/30">
+          <div className="rounded-lg overflow-hidden bg-black/30">
             <iframe src={embedUrl} className="w-full h-20" allow="autoplay" title={sound.title} />
           </div>
         ) : srcUrl ? (
-          <div className="bg-[#12122a] rounded-xl px-4 py-3">
+          <div className="bg-[#0f1218] rounded-lg px-4 py-3">
             <audio ref={audioRef} src={srcUrl} preload="none" />
             <div className="flex items-center gap-3">
               <button
                 onClick={toggle}
-                className="bg-[#7c3aed] hover:bg-[#6d28d9] rounded-full size-10 flex items-center justify-center shrink-0"
+                className="bg-[#10b981] hover:bg-[#0d9668] rounded-full size-10 flex items-center justify-center shrink-0 transition-colors"
               >
                 {isPlaying
                   ? <Pause className="size-[14px] text-white" />
@@ -165,13 +165,13 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
                   className="cursor-pointer"
                 />
               </div>
-              <span className="text-[11px] text-[#8888aa] tabular-nums shrink-0">
+              <span className="text-[11px] text-[#9ca3af] tabular-nums shrink-0">
                 {formatTime(currentTime)}
               </span>
-              <span className="text-[11px] text-[#555566] tabular-nums shrink-0">
+              <span className="text-[11px] text-[#6b7280] tabular-nums shrink-0">
                 {formatTime(dur)}
               </span>
-              <Volume2 className="size-[14px] text-[#555566] shrink-0 ml-1" />
+              <Volume2 className="size-[14px] text-[#6b7280] shrink-0 ml-1" />
             </div>
           </div>
         ) : null}
@@ -179,8 +179,7 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
         {/* Download */}
         <button
           onClick={dl}
-          className="w-full h-10 rounded-xl text-white text-sm font-medium flex items-center justify-center gap-2"
-          style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 50%, #06b6d4 100%)' }}
+          className="w-full h-10 rounded-lg bg-[#10b981] hover:bg-[#0d9668] text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors"
         >
           <Download className="size-4" />
           Download
@@ -192,7 +191,7 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
             {sound.tags.map((tag, i) => (
               <span
                 key={`${tag}-${i}`}
-                className="text-[11px] text-[#b0b0cc] bg-[#22223a] px-2.5 py-[5px] rounded-full"
+                className="text-[11px] text-[#9ca3af] bg-[#1f2430] border border-[#2a3040] px-2.5 py-[5px] rounded-md"
               >
                 {formatTagForDisplay(tag)}
               </span>
@@ -201,7 +200,7 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
         )}
 
         {/* Stats */}
-        <div className="flex items-center gap-5 text-[12px] text-[#6b6b88] pt-1">
+        <div className="flex items-center gap-5 text-[12px] text-[#6b7280] pt-1">
           <span>{formatFileSize(sound.file_size)}</span>
           <span className="flex items-center gap-1">
             <Play className="size-[10px] fill-current" /> {sound.listens || 0}
@@ -214,12 +213,12 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
         {/* Metadata toggle */}
         <button
           onClick={() => setShowMeta(!showMeta)}
-          className="flex items-center justify-between w-full pt-3 border-t border-[#2a2a4a]"
+          className="flex items-center justify-between w-full pt-3 border-t border-[#252a35]"
         >
-          <span className="text-[13px] text-[#c0c0d8] font-medium">Metadata</span>
+          <span className="text-[13px] text-[#d1d5db] font-medium">Metadata</span>
           {showMeta
-            ? <ChevronUp className="size-4 text-[#6b6b88]" />
-            : <ChevronDown className="size-4 text-[#6b6b88]" />}
+            ? <ChevronUp className="size-4 text-[#6b7280]" />
+            : <ChevronDown className="size-4 text-[#6b7280]" />}
         </button>
 
         {/* Metadata content */}
@@ -274,8 +273,8 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
             {/* Description */}
             {sound.description && (
               <div>
-                <span className="text-[11px] text-[#6b6b88]">Description:</span>
-                <p className="text-[12px] text-[#a0a0bb] mt-0.5">{sound.description}</p>
+                <span className="text-[11px] text-[#6b7280]">Description:</span>
+                <p className="text-[12px] text-[#9ca3af] mt-0.5">{sound.description}</p>
               </div>
             )}
 
@@ -287,8 +286,8 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
               )}
               {sound.filename && (
                 <div className="pl-4">
-                  <span className="text-[11px] text-[#6b6b88]">Filename:</span>
-                  <p className="text-[11px] text-[#8888aa] break-all leading-relaxed mt-0.5">
+                  <span className="text-[11px] text-[#6b7280]">Filename:</span>
+                  <p className="text-[11px] text-[#9ca3af] break-all leading-relaxed mt-0.5">
                     {sound.filename}
                   </p>
                 </div>
@@ -311,8 +310,8 @@ function Row({ label, value, sub = false, valueColor }: {
 }) {
   return (
     <div className={`flex justify-between items-baseline ${sub ? 'pl-4' : ''}`}>
-      <span className="text-[11px] text-[#6b6b88]">{label}</span>
-      <span className="text-[12px] text-[#c0c0d8]" style={valueColor ? { color: valueColor } : undefined}>
+      <span className="text-[11px] text-[#6b7280]">{label}</span>
+      <span className="text-[12px] text-[#d1d5db]" style={valueColor ? { color: valueColor } : undefined}>
         {value}
       </span>
     </div>
@@ -322,7 +321,7 @@ function Row({ label, value, sub = false, valueColor }: {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <span className="text-[12px] text-[#e2e2f0] font-semibold">{title}</span>
+      <span className="text-[12px] text-[#e8eaed] font-semibold">{title}</span>
       {children}
     </div>
   );

@@ -38,6 +38,7 @@ export default function App() {
   const [results, setResults] = useState<Sound[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const [allSounds, setAllSounds] = useState<Sound[]>([]);
   const [soundCount, setSoundCount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
@@ -109,6 +110,22 @@ export default function App() {
   if (isTestMode) {
     return <TailwindTestPage />;
   }
+
+  // Check existing auth session + listen for changes
+  useEffect(() => {
+    api.getSession().then((session) => {
+      const isAdmin = session?.user?.app_metadata?.role === 'admin';
+      setIsLoggedIn(isAdmin);
+      setAuthChecked(true);
+    });
+
+    const subscription = api.onAuthStateChange((session) => {
+      const isAdmin = session?.user?.app_metadata?.role === 'admin';
+      setIsLoggedIn(isAdmin);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Load just the count + tags on mount (lightweight)
   useEffect(() => {
@@ -235,7 +252,8 @@ export default function App() {
     setShowLogin(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await api.signOut();
     setIsLoggedIn(false);
     // Reset to default search page
     setShowResults(false);
@@ -322,7 +340,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-[#0d1017]">
       {/* Age Verification Modal */}
       <AgeVerification
         isOpen={showAgeVerification}
@@ -331,12 +349,13 @@ export default function App() {
       />
 
       {/* Top Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-sm border-b border-white/10">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0d1017]/90 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3">
               <h2 className="text-white text-base sm:text-lg lg:text-xl">Para's SFX Library</h2>
-              
+              <span className="text-[10px] sm:text-xs font-medium px-1.5 py-0.5 rounded border border-white/30 text-white/70">CC0</span>
+
               <div className="hidden sm:block w-px h-6 bg-white/20 mx-1"></div>
               
               {/* Social Media Icons - Hidden on smallest mobile */}
@@ -438,12 +457,12 @@ export default function App() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        className="pl-9 sm:pl-11 h-12 sm:h-14 bg-white/10 border-white/20 text-white placeholder:text-slate-400 text-sm sm:text-base"
+                        className="pl-9 sm:pl-11 h-12 sm:h-14 bg-[#141820] border-[#252a35] text-white placeholder:text-[#6b7280] text-sm sm:text-base"
                       />
                     </div>
                     <Button
                       onClick={handleSearch}
-                      className="h-12 sm:h-14 px-6 sm:px-8 bg-purple-600 hover:bg-purple-700 text-sm sm:text-base"
+                      className="h-12 sm:h-14 px-6 sm:px-8 bg-[#10b981] hover:bg-[#0d9668] text-sm sm:text-base"
                     >
                       Search
                     </Button>
@@ -472,7 +491,7 @@ export default function App() {
                     <button
                       onClick={handleShowAll}
                       disabled={loading}
-                      className="text-purple-400 hover:text-purple-300 transition-colors underline underline-offset-4 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                      className="text-[#10b981] hover:text-[#34d399] transition-colors underline underline-offset-4 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                     >
                       View all sounds
                     </button>
@@ -488,12 +507,40 @@ export default function App() {
                 transition={{ duration: 0.5 }}
               >
                 <div className="mb-6 sm:mb-8">
-                  <h2 className="text-white mb-2 text-xl sm:text-2xl">
-                    {searchQuery ? `Search Results for "${searchQuery}"` : 'All Sounds'}
-                  </h2>
-                  <p className="text-slate-400 text-sm sm:text-base">
-                    {isViewAll ? `Found ${totalSounds} tracks` : `Found ${results.length} tracks`}
-                  </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                    <div>
+                      <h2 className="text-white mb-1 text-xl sm:text-2xl">
+                        {searchQuery ? `Search Results for "${searchQuery}"` : 'All Sounds'}
+                      </h2>
+                      <p className="text-slate-400 text-sm sm:text-base">
+                        Found {isViewAll ? totalSounds : results.length} tracks
+                        {isViewAll && results.length < totalSounds && (
+                          <span className="text-[#10b981]"> (showing {results.length})</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Search bar on results page */}
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 size-4 sm:size-5" />
+                      <Input
+                        type="text"
+                        placeholder="Type the sfx you're looking for.."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        className="pl-9 sm:pl-11 h-10 sm:h-12 bg-[#141820] border-[#252a35] text-white placeholder:text-[#6b7280] text-sm sm:text-base"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleSearch}
+                      className="h-10 sm:h-12 px-6 sm:px-8 bg-[#10b981] hover:bg-[#0d9668] text-sm sm:text-base"
+                    >
+                      Search
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Browse by Tags on Results Page */}
@@ -544,6 +591,37 @@ export default function App() {
         </div>
       </div>
       
+      {/* Footer */}
+      <footer className="border-t border-[#252a35] bg-[#0a0d12] mt-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 text-center space-y-4">
+          <p className="text-slate-300 text-sm sm:text-base">
+            All sounds released under{' '}
+            <a
+              href="https://creativecommons.org/publicdomain/zero/1.0/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-2 py-0.5 border border-white/30 rounded text-white/80 hover:text-white hover:border-white/50 transition-colors mx-1"
+            >
+              CC0 1.0 Universal
+            </a>{' '}
+            Public Domain
+          </p>
+          <p className="text-slate-400 text-xs sm:text-sm">
+            All SFX within the library are recorded, edited and fully owned by Paradoxxxical unless stated otherwise.
+          </p>
+          <p className="text-slate-500 text-xs">
+            This site is protected by reCAPTCHA and the Google{' '}
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-400 transition-colors">Privacy Policy</a>
+            {' '}and{' '}
+            <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-400 transition-colors">Terms of Service</a>
+            {' '}apply.
+          </p>
+          <p className="text-slate-500 text-xs">
+            © {new Date().getFullYear()} Para's SFX Library &nbsp;•&nbsp; Version 1.2.0
+          </p>
+        </div>
+      </footer>
+
       {/* Toast notifications */}
       <Toaster />
     </div>

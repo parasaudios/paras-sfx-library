@@ -4,47 +4,54 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { toast } from 'sonner';
+import * as api from '../utils/api';
 
 interface LoginProps {
   onLogin: () => void;
 }
 
 export function Login({ onLogin }: LoginProps) {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (username === 'admin' && password === 'admin') {
+    setLoading(true);
+
+    try {
+      await api.signIn(email, password);
       toast.success('Login successful!');
       onLogin();
-    } else {
-      toast.error('Invalid username or password');
+    } catch (error: any) {
+      toast.error(error.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#0d1017] flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-6 sm:p-8">
+        <div className="bg-[#141820] border border-[#252a35] rounded-lg p-6 sm:p-8">
           <h1 className="text-white text-center mb-6 sm:mb-8 text-2xl sm:text-3xl">Admin Login</h1>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-white text-sm sm:text-base">Username</Label>
+              <Label htmlFor="email" className="text-white text-sm sm:text-base">Email</Label>
               <Input
-                id="username"
-                type="text"
-                placeholder="Enter username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="bg-white/5 border-white/20 text-white placeholder:text-slate-400 h-10 sm:h-12 text-sm sm:text-base"
+                id="email"
+                type="email"
+                placeholder="Enter admin email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280] h-10 sm:h-12 text-sm sm:text-base"
                 required
+                disabled={loading}
               />
             </div>
 
@@ -56,16 +63,18 @@ export function Login({ onLogin }: LoginProps) {
                 placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-white/5 border-white/20 text-white placeholder:text-slate-400 h-10 sm:h-12 text-sm sm:text-base"
+                className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280] h-10 sm:h-12 text-sm sm:text-base"
                 required
+                disabled={loading}
               />
             </div>
 
             <Button
               type="submit"
-              className="w-full bg-purple-600 hover:bg-purple-700 h-10 sm:h-12 text-sm sm:text-base"
+              className="w-full bg-[#10b981] hover:bg-[#0d9668] h-10 sm:h-12 text-sm sm:text-base"
+              disabled={loading}
             >
-              Login
+              {loading ? 'Signing in...' : 'Login'}
             </Button>
           </form>
         </div>

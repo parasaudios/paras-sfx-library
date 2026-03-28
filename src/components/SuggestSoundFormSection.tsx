@@ -103,7 +103,7 @@ export function SuggestSoundFormSection() {
 
   return (
     <div id="suggest-form" className="max-w-2xl mx-auto w-full px-4 sm:px-0">
-      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 sm:p-6 lg:p-8">
+      <div className="bg-[#141820] border border-[#252a35] rounded-lg p-4 sm:p-6 lg:p-8">
         <div className="mb-4 sm:mb-6">
           <h2 className="text-white mb-2 text-xl sm:text-2xl">Suggest A Sound Effect</h2>
           <p className="text-slate-400 text-sm sm:text-base">
@@ -123,7 +123,7 @@ export function SuggestSoundFormSection() {
                 handleInputChange();
               }}
               onFocus={handleInputChange}
-              className="bg-white/5 border-white/20 text-white placeholder:text-slate-400 h-10 sm:h-12 text-sm sm:text-base"
+              className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280] h-10 sm:h-12 text-sm sm:text-base"
               required
             />
           </div>
@@ -139,7 +139,7 @@ export function SuggestSoundFormSection() {
                 handleInputChange();
               }}
               onFocus={handleInputChange}
-              className="bg-white/5 border-white/20 text-white placeholder:text-slate-400 h-10 sm:h-12 text-sm sm:text-base"
+              className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280] h-10 sm:h-12 text-sm sm:text-base"
             />
           </div>
 
@@ -154,7 +154,7 @@ export function SuggestSoundFormSection() {
                 handleInputChange();
               }}
               onFocus={handleInputChange}
-              className="bg-white/5 border-white/20 text-white placeholder:text-slate-400 min-h-24 sm:min-h-32 text-sm sm:text-base"
+              className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280] min-h-24 sm:min-h-32 text-sm sm:text-base"
             />
           </div>
 
@@ -174,7 +174,7 @@ export function SuggestSoundFormSection() {
 
           <Button
             type="submit"
-            className="w-full bg-purple-600 hover:bg-purple-700 h-10 sm:h-12 text-sm sm:text-base"
+            className="w-full bg-[#10b981] hover:bg-[#0d9668] h-10 sm:h-12 text-sm sm:text-base"
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Submitting...' : 'Submit Suggestion'}
