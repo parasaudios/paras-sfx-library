@@ -1,2 +1,2 @@
 export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'http://localhost:54341';
-export const publicAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzc0OTM2NTU1LCJleHAiOjIwOTAyOTY1NTV9.NLBtL0SOx9iOQRdcnYDGwElSvtaTIxZVAxC-w1d2bm0';
+export const publicAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzc1OTg2NjgxLCJleHAiOjI0MDY3MDY2ODF9.aK5SNH3LNPlAKYgpM7DQpXDmZPKuuP9yDxvymXc-BUM';
