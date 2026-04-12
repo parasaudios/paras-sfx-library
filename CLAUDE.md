@@ -10,16 +10,72 @@ A React + Vite sound effects library app with a Supabase backend. Users can sear
 - **Styling:** Tailwind CSS + Radix UI primitives + shadcn/ui components
 - **Entry point:** `src/App.tsx`
 
-### Backend — Supabase (Direct Queries)
-- **Project ID:** `nuskzxhtiusnaaungbzh`
+### Backend — Self-Hosted Supabase
+- **Hosting:** Self-hosted via Docker Compose (`docker/docker-compose.yml`)
 - **All API calls go through:** `src/utils/api.tsx` (single gateway — no other file talks to Supabase directly)
 - **Client library:** `@supabase/supabase-js` (npm, v2.x)
-- **Auth config:** `src/utils/supabase/info.tsx` (project ID + anon key)
+- **Auth config:** `src/utils/supabase/info.tsx` (Supabase URL + anon key via env vars)
 
-### Previous Architecture (Deprecated)
-- Previously used a Hono-based Edge Function (`make-server-27929102`) as an API middleman
-- Previously used a KV store table (`kv_store_27929102`) for sound/tag/suggestion data
-- Both have been replaced by direct Supabase client queries + proper normalized tables
+### Self-Hosted Infrastructure
+
+#### Security Architecture (Best Practices)
+The self-hosted Supabase instance follows these security best practices:
+
+1. **Custom JWT Secret** — A unique 64-character HS256 secret replaces the default Supabase demo key, making all default/demo JWTs cryptographically invalid. Stored in `docker/.env` (git-ignored).
+2. **Tunnel Proxy** (`scripts/tunnel-proxy.mjs`) — Sits between Cloudflare Tunnel and Supabase API (port 54350 → 54341). Blocks:
+   - Any request carrying a `service_role` JWT (detected via base64url fragment matching in headers and query params)
+   - Admin-only paths (`/auth/v1/admin`, `/pg/`)
+   - Logs all blocked requests with timestamps, source IPs, and block reasons to `tunnel-proxy.log`
+3. **Localhost-Only Port Binding** — All Docker ports bind to `127.0.0.1`, not `0.0.0.0`
+4. **Windows Firewall Rules** (`scripts/lock-db-ports.bat`) — Blocks external network access to ports 54340-54349 while preserving localhost access
+5. **Cloudflare Tunnel** — Public API access via `sfxlib-api.parasfx.com` routes through the tunnel proxy only
+6. **RLS + SECURITY DEFINER Functions** — All admin mutations go through Postgres functions with `SET search_path = public` to prevent search-path injection
+7. **Auth Hardening** — Signup disabled, minimum 12-char passwords, mixed case + digits required
+
+#### Docker Compose Stack (12 Services)
+Managed via `docker/docker-compose.yml` with secrets in `docker/.env` (NEVER commit):
+- **db** (postgres:17) — Port 54342, named volume `supabase_db_Para_SFX_Library`
+- **kong** (2.8.1) — API gateway, port 54341
+- **auth/gotrue** — Authentication service
+- **rest/postgrest** — REST API, uses JWKS format for JWT validation
+- **storage** — File storage API, named volume `supabase_storage_Para_SFX_Library`
+- **realtime** — WebSocket subscriptions
+- **studio** — Admin dashboard, port 54343
+- **analytics/logflare** — Log aggregation, port 54345
+- **edge-runtime** — Deno edge functions
+- **inbucket/mailpit** — Dev email, port 54344
+- **imgproxy** — Image transformation
+- **pg-meta** — Database metadata API
+
+#### Key Files
+| File | Purpose |
+|------|---------|
+| `docker/docker-compose.yml` | Full Supabase stack definition |
+| `docker/.env` | All secrets (JWT_SECRET, keys, passwords) — NEVER commit |
+| `docker/kong.yml` | Kong API gateway routing config |
+| `docker/functions/main/index.ts` | Edge runtime entrypoint |
+| `scripts/tunnel-proxy.mjs` | Security reverse proxy for public access |
+| `scripts/lock-db-ports.bat` | Windows Firewall rules (run as Admin) |
+| `scripts/start-tunnel-proxy.bat` | Starts the tunnel proxy |
+
+#### Startup Procedure
+```bash
+cd docker && docker compose up -d          # Start all services
+node scripts/tunnel-proxy.mjs              # Start security proxy (port 54350)
+cloudflared tunnel run parasmut-supabase   # Start Cloudflare Tunnel
+scripts\lock-db-ports.bat                  # Run as Admin — firewall DB ports
+```
+
+#### Best Practices Checklist
+- [ ] `docker/.env` is in `.gitignore` and NEVER committed
+- [ ] JWT_SECRET is unique (not the Supabase default)
+- [ ] All Docker ports bind to `127.0.0.1`
+- [ ] Tunnel proxy is running and blocking service_role keys
+- [ ] Windows Firewall rules are applied (ports 54340-54349)
+- [ ] Cloudflare Tunnel routes only through the proxy (port 54350)
+- [ ] Admin functions use `SECURITY DEFINER` with `SET search_path = public`
+- [ ] Signup is disabled, strong password policy enforced
+- [ ] Regular database backups (use `backup-supabase.ps1`)
 
 ## Database Schema
 
@@ -45,8 +101,7 @@ A React + Vite sound effects library app with a Supabase backend. Users can sear
 - Frontend maps: `sound_name` → `soundName`, `created_at` → `submittedAt`, `status !== 'pending'` → `isRead`
 
 ### Storage Buckets
-- `sounds` — primary bucket for uploaded SFX files
-- `make-27929102-streaming` — legacy bucket from Figma Make uploads (36 KV-only sounds)
+- `sounds` — primary bucket for all SFX files (mp3 + wav)
 
 ### Postgres Functions (RPC)
 | Function | Purpose | Auth |
@@ -74,7 +129,7 @@ src/
 ├── types/index.ts                   # Sound & Suggestion TypeScript interfaces
 ├── utils/
 │   ├── api.tsx                      # *** SINGLE API GATEWAY *** — all Supabase calls
-│   ├── supabase/info.tsx            # Project ID + anon key
+│   ├── supabase/info.tsx            # Supabase URL + anon key (via env vars)
 │   ├── migrateData.tsx              # localStorage → Supabase migration utility
 │   └── seedData.tsx                 # Sample data seeder
 ├── components/
@@ -84,7 +139,19 @@ src/
 │   ├── ManageSuggestions.tsx        # View/manage user suggestions
 │   ├── ManageTags.tsx               # Tag management UI
 │   ├── BulkImport.tsx               # JSON bulk import
-│   └── SuggestSoundFormSection.tsx  # Public suggestion form (with bot protection)
+│   ├── SuggestSoundFormSection.tsx  # Public suggestion form (with bot protection)
+│   ├── ErrorBoundary.tsx            # React error boundary for crash recovery
+│   └── Login.tsx                    # Admin login component
+docker/
+├── docker-compose.yml               # Full Supabase self-hosted stack
+├── .env                             # Secrets (git-ignored)
+├── kong.yml                         # Kong gateway config
+└── functions/main/index.ts          # Edge runtime entrypoint
+scripts/
+├── tunnel-proxy.mjs                 # Security reverse proxy
+├── start-tunnel-proxy.bat           # Proxy startup script
+├── lock-db-ports.bat                # Windows Firewall lockdown
+└── apply-kong-config.bat            # Re-apply Kong config
 ```
 
 ## API Function Reference (`src/utils/api.tsx`)
@@ -109,21 +176,19 @@ src/
 
 ## Migration History
 
-### March 2026 — KV → Normalized Tables
-1. Migrated 36 KV-only sounds into `sounds` table (702 KV total, 666 already existed)
-2. Migrated KV suggestions array into `suggestions` table
-3. Synced KV tags into `tags` table
-4. Replaced Edge Function API with direct Supabase JS client queries
-5. Dropped legacy tables: `kv_store_27929102`, all `*_old` tables, unused feature tables
+### March 2026 — Cloud → Self-Hosted
+1. Migrated from Supabase Cloud to self-hosted Docker Compose stack
+2. Generated unique JWT secret, replacing default demo keys
+3. Added tunnel proxy + Cloudflare Tunnel for secure public access
+4. Applied Windows Firewall rules, localhost-only port binding
 
-### Tables Dropped
-- `kv_store_27929102` (KV store)
-- `*_old` tables (sounds_old, tags_old, etc.)
-- Unused feature tables: collections, playlists, favorites, comments, similar_sounds, etc.
-- Duplicate puppy_app tables: rewards, tasks, badges (non-prefixed versions)
+### March 2026 — KV → Normalized Tables
+1. Migrated KV store data into proper `sounds`, `suggestions`, `tags` tables
+2. Replaced Edge Function API with direct Supabase JS client queries
+3. Dropped all legacy tables (KV store, *_old, unused feature tables)
 
 ## Dev Notes
-- **Build issue:** Pre-existing Tailwind/PostCSS error (`Cannot read properties of undefined (reading 'blocklist')`) — not related to API migration
 - **Bot protection:** `SuggestSoundFormSection` uses honeypot field, interaction counting, minimum form time, and 1-minute rate limiting
 - **Admin auth:** Simple password-based login (not Supabase Auth)
 - **Soft deletes:** Sounds use `deleted_at` column; queries filter `WHERE deleted_at IS NULL`
+- **Polling intervals:** AdminDashboard (30s), ManageSuggestions (30s) — keep reasonable to avoid excessive API load

@@ -24,7 +24,9 @@ export function Login({ onLogin }: LoginProps) {
       toast.success('Login successful!');
       onLogin();
     } catch (error: any) {
-      toast.error(error.message || 'Invalid credentials');
+      const msg = error?.message || '';
+      const safeMsg = msg.includes('admin privileges') ? msg : 'Invalid credentials';
+      toast.error(safeMsg);
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.*.local
+.env.production
+docker/.env
+*.log
+*.pem
+*.key
+supabase/signing_keys.json
+.DS_Store
+.claude/settings.local.json
+backups/

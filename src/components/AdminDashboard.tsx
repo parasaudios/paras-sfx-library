@@ -11,8 +11,6 @@ import { ManageSuggestions } from './ManageSuggestions';
 import { BulkImport } from './BulkImport';
 import { ManageTags } from './ManageTags';
 import * as api from '../utils/api';
-import { migrateLocalStorageToSupabase } from '../utils/migrateData';
-import { seedDatabase } from '../utils/seedData';
 
 interface Sound {
   id: string;
@@ -39,23 +37,14 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Migrate existing localStorage data to Supabase
-    const migrate = async () => {
-      const result = await migrateLocalStorageToSupabase();
-      if (result.success && result.migrated > 0) {
-        toast.success(result.message);
-      }
-    };
-    migrate();
-
     // Load custom sounds from API
     loadSounds();
 
     // Load unread suggestions count
     updateUnreadCount();
 
-    // Update count when tab becomes active
-    const interval = setInterval(updateUnreadCount, 1000);
+    // Poll for unread suggestion count
+    const interval = setInterval(updateUnreadCount, 30000);
     return () => clearInterval(interval);
   }, []);
 

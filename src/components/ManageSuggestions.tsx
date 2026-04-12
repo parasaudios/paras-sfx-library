@@ -21,8 +21,8 @@ export function ManageSuggestions() {
   useEffect(() => {
     loadSuggestions();
     
-    // Reload suggestions when component becomes visible
-    const interval = setInterval(loadSuggestions, 5000);
+    // Poll for new suggestions
+    const interval = setInterval(loadSuggestions, 30000);
     return () => clearInterval(interval);
   }, []);
 

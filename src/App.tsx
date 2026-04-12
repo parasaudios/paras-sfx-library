@@ -9,8 +9,6 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { GoogleDriveAudioPlayer } from './components/GoogleDriveAudioPlayer';
 import { BrowseByTags } from './components/BrowseByTags';
 import { AgeVerification } from './components/AgeVerification';
-import { TestHtmlWrapper } from './components/TestHtmlWrapper';
-import { TailwindTestPage } from './components/TailwindTestPage';
 import { Toaster } from './components/ui/sonner';
 import { searchSounds } from './utils/searchUtils';
 import { isAgeVerified, setAgeVerified, filterNSFWSounds, isNSFW } from './utils/ageVerification';
@@ -18,20 +16,6 @@ import * as api from './utils/api';
 import type { Sound } from './types/index';
 
 export default function App() {
-  // Check if test mode is enabled via URL parameter
-  console.log('Full URL:', window.location.href);
-  console.log('Search string:', window.location.search);
-  
-  const urlParams = new URLSearchParams(window.location.search);
-  console.log('URLSearchParams object:', urlParams.toString());
-  console.log('test param value:', urlParams.get('test'));
-  console.log('test param value type:', typeof urlParams.get('test'));
-  
-  const isTestMode = urlParams.get('test') === 'true';
-  
-  console.log('URL search params:', window.location.search);
-  console.log('Test mode enabled:', isTestMode);
-  console.log('isTestMode type:', typeof isTestMode);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
@@ -106,11 +90,6 @@ export default function App() {
     observerRef.current.observe(node);
   }, []);
 
-  // If test mode, show the test HTML page (early return after hooks)
-  if (isTestMode) {
-    return <TailwindTestPage />;
-  }
-
   // Check existing auth session + listen for changes
   useEffect(() => {
     api.getSession().then((session) => {
@@ -178,7 +157,6 @@ export default function App() {
   const loadManagedTags = async () => {
     try {
       const tags = await api.getAllTags();
-      console.log('Loaded managed tags from API:', tags);
       setManagedTags(tags);
     } catch (error) {
       console.error('Failed to load managed tags:', error);
@@ -608,13 +586,6 @@ export default function App() {
           </p>
           <p className="text-slate-400 text-xs sm:text-sm">
             All SFX within the library are recorded, edited and fully owned by Paradoxxxical unless stated otherwise.
-          </p>
-          <p className="text-slate-500 text-xs">
-            This site is protected by reCAPTCHA and the Google{' '}
-            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-400 transition-colors">Privacy Policy</a>
-            {' '}and{' '}
-            <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-400 transition-colors">Terms of Service</a>
-            {' '}apply.
           </p>
           <p className="text-slate-500 text-xs">
             © {new Date().getFullYear()} Para's SFX Library &nbsp;•&nbsp; Version 1.2.0

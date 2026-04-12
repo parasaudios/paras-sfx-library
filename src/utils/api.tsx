@@ -1,11 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
-import { projectId, publicAnonKey } from './supabase/info';
+import { supabaseUrl, publicAnonKey } from './supabase/info';
 import type { Sound, Suggestion } from '../types/index';
 
-const supabase = createClient(
-  `https://${projectId}.supabase.co`,
-  publicAnonKey
-);
+const supabase = createClient(supabaseUrl, publicAnonKey);
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 

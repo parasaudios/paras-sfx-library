@@ -1,12 +1,10 @@
 -- =============================================================================
+-- COMPLETED — One-time migration (March 2026). Kept for historical reference.
 -- MIGRATION: KV Store → Proper Postgres Tables
 -- =============================================================================
--- This script migrates the paras-sfx-library from the kv_store_27929102
--- key-value pattern to the existing proper `sounds`, `tags`, and `suggestions`
--- tables, then cleans up legacy/unused tables.
---
--- Run this in the Supabase SQL Editor:
---   https://supabase.com/dashboard/project/nuskzxhtiusnaaungbzh/sql/new
+-- Migrated paras-sfx-library from kv_store key-value pattern to proper
+-- `sounds`, `tags`, and `suggestions` tables, then dropped legacy tables.
+-- Cloud project has since been decommissioned.
 --
 -- IMPORTANT: Review each section before running. The DROP statements at the
 -- end are commented out — uncomment them only after confirming the migration.
