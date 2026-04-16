@@ -3,6 +3,7 @@ import { Download, Play, Pause, Volume2, ChevronDown, ChevronUp } from 'lucide-r
 import { Slider } from './ui/slider';
 import { capitalizeWords } from '../utils/formatters';
 import { formatTagForDisplay } from '../utils/tagUtils';
+import { supabaseUrl } from '../utils/supabase/info';
 import type { Sound } from '../types/index';
 
 interface GoogleDriveAudioPlayerProps {
@@ -60,10 +61,11 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
       dlUrl: `https://drive.google.com/uc?export=download&id=${fid}`,
       srcUrl: null as string | null,
     };
+    const resolveUrl = (path: string) => path.startsWith('/') ? `${supabaseUrl}${path}` : path;
     return {
       isGDrive: false, embedUrl: null,
-      dlUrl: sound.downloadUrl || sound.audioUrl,
-      srcUrl: sound.audioUrl,
+      dlUrl: resolveUrl(sound.downloadUrl || sound.audioUrl),
+      srcUrl: resolveUrl(sound.audioUrl),
     };
   }, [sound.audioUrl, sound.downloadUrl]);
 
