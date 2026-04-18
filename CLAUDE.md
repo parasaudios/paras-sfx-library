@@ -66,6 +66,20 @@ cloudflared tunnel run parasmut-supabase   # Start Cloudflare Tunnel
 scripts\lock-db-ports.bat                  # Run as Admin — firewall DB ports
 ```
 
+#### CRITICAL: Backup Before Any Docker Changes
+**NEVER restart, recreate, or modify Docker containers/volumes without first running a full backup.**
+```powershell
+.\backup-supabase.ps1   # Backs up BOTH database AND storage volume
+```
+The backup script creates:
+- `backups/supabase_backup_<timestamp>.sql` — full Postgres dump
+- `backups/storage/storage_backup_<timestamp>.tar.gz` — all audio files from the storage volume
+
+To restore storage from backup:
+```powershell
+docker run --rm -v supabase_storage_Para_SFX_Library:/target -v "${PWD}\backups\storage:/backup" alpine tar xzf /backup/storage_backup_<timestamp>.tar.gz -C /target
+```
+
 #### Best Practices Checklist
 - [ ] `docker/.env` is in `.gitignore` and NEVER committed
 - [ ] JWT_SECRET is unique (not the Supabase default)
@@ -75,7 +89,8 @@ scripts\lock-db-ports.bat                  # Run as Admin — firewall DB ports
 - [ ] Cloudflare Tunnel routes only through the proxy (port 54350)
 - [ ] Admin functions use `SECURITY DEFINER` with `SET search_path = public`
 - [ ] Signup is disabled, strong password policy enforced
-- [ ] Regular database backups (use `backup-supabase.ps1`)
+- [ ] **ALWAYS run `backup-supabase.ps1` before any Docker changes** — backs up DB + storage volume
+- [ ] Regular daily backups running (scheduled task for `backup-supabase.ps1`)
 
 ## Database Schema
 
