@@ -6,7 +6,24 @@ const supabase = createClient(supabaseUrl, publicAnonKey);
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 
-export async function signIn(email: string, password: string) {
+// Username → email mapping for admin sign-in.
+// Supabase Auth only supports email-based login, so we resolve usernames to
+// the email registered against the auth.users record before signing in.
+// Lookup is case-insensitive.
+const USERNAME_EMAIL_MAP: Record<string, string> = {
+  para: 'admin@parasfx.com',
+};
+
+function resolveLoginIdentifier(identifier: string): string {
+  const trimmed = identifier.trim();
+  if (trimmed.includes('@')) return trimmed; // already an email
+  const mapped = USERNAME_EMAIL_MAP[trimmed.toLowerCase()];
+  return mapped || trimmed; // fall through to whatever they typed (will fail auth cleanly)
+}
+
+export async function signIn(identifier: string, password: string) {
+  const email = resolveLoginIdentifier(identifier);
+
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,

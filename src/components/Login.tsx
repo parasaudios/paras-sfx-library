@@ -11,7 +11,7 @@ interface LoginProps {
 }
 
 export function Login({ onLogin }: LoginProps) {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +20,7 @@ export function Login({ onLogin }: LoginProps) {
     setLoading(true);
 
     try {
-      await api.signIn(email, password);
+      await api.signIn(identifier, password);
       toast.success('Login successful!');
       onLogin();
     } catch (error: any) {
@@ -44,13 +44,14 @@ export function Login({ onLogin }: LoginProps) {
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-white text-sm sm:text-base">Email</Label>
+              <Label htmlFor="identifier" className="text-white text-sm sm:text-base">Username or Email</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="Enter admin email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="identifier"
+                type="text"
+                autoComplete="username"
+                placeholder="Enter username or email"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280] h-10 sm:h-12 text-sm sm:text-base"
                 required
                 disabled={loading}
