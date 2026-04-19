@@ -66,6 +66,21 @@ cloudflared tunnel run parasmut-supabase   # Start Cloudflare Tunnel
 scripts\lock-db-ports.bat                  # Run as Admin — firewall DB ports
 ```
 
+#### Auto-start at Logon (one-time setup)
+The tunnel proxy must be running for `sfxlib-api.parasfx.com` to work. To
+have it start automatically (and auto-restart on crash) at every user logon:
+```powershell
+# Run once after cloning the repo (no admin needed)
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\setup-autostart.ps1
+```
+This drops a `.vbs` launcher into the user's Startup folder pointing at
+`scripts\run-tunnel-proxy-supervised.ps1`. The supervisor relaunches the
+proxy within 5 seconds if it ever exits. Logs:
+- `tunnel-proxy.log` — proxy events (request/block/response)
+- `tunnel-proxy-supervisor.log` — supervisor restart events
+
+To uninstall: delete `ParaSFX-TunnelProxy.vbs` from `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\`.
+
 #### CRITICAL: Backup Before Any Docker Changes
 **NEVER restart, recreate, or modify Docker containers/volumes without first running a full backup.**
 ```powershell
