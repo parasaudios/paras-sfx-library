@@ -56,6 +56,7 @@ function broadcastPlay(audio: HTMLAudioElement) {
 
 function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -116,6 +117,25 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
     }
   };
 
+  // Also preload metadata as soon as the card scrolls into view.
+  // Covers mobile (no hover) + keyboard navigation. Fires once per mount.
+  useEffect(() => {
+    const card = cardRef.current;
+    const a = audioRef.current;
+    if (!card || !a || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting && a.preload === 'none') {
+          a.preload = 'metadata';
+          io.disconnect();
+          break;
+        }
+      }
+    }, { rootMargin: '200px' });  // start 200px before visible
+    io.observe(card);
+    return () => io.disconnect();
+  }, []);
+
   const toggle = () => {
     const a = audioRef.current;
     if (!a) return;
@@ -166,7 +186,7 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
   const channelLabel = sound.channels === 1 ? 'Mono' : sound.channels === 2 ? 'Stereo' : null;
 
   return (
-    <div className="bg-[#181c24] border border-[#252a35] rounded-xl overflow-hidden hover:border-[#2f3645] transition-colors" onMouseEnter={handleHover}>
+    <div ref={cardRef} className="bg-[#181c24] border border-[#252a35] rounded-xl overflow-hidden hover:border-[#2f3645] transition-colors" onMouseEnter={handleHover}>
       <div className="p-5 space-y-3">
 
         {/* Title */}

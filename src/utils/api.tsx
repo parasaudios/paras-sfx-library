@@ -117,6 +117,23 @@ export async function getSounds(page: number = 0, pageSize: number = 30): Promis
   }
 }
 
+// Server-side search via the search_sounds() RPC (uses the tsvector GIN index).
+// Returns only matching rows (usually <50) instead of the whole catalogue.
+// Falls back to client-side search if the RPC call fails for any reason.
+export async function searchSoundsRemote(query: string, maxResults: number = 50): Promise<Sound[]> {
+  try {
+    const { data, error } = await supabase.rpc('search_sounds', {
+      q: query,
+      max_results: maxResults,
+    });
+    if (error) throw error;
+    return (data as Sound[]) || [];
+  } catch (error) {
+    console.error('Error in searchSoundsRemote:', error);
+    return [];
+  }
+}
+
 // Fire-and-forget play/download counter bumps. We don't await these in the UI -
 // they're best-effort telemetry and must never block playback or download.
 export async function incrementListen(soundId: string): Promise<void> {

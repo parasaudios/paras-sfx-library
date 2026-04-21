@@ -127,23 +127,6 @@ export default function App() {
     }
   };
 
-  // Load all sounds only when needed (search or view all)
-  const ensureSoundsLoaded = async (): Promise<Sound[]> => {
-    if (allSounds.length > 0) return allSounds;
-    setLoading(true);
-    try {
-      const sounds = await api.getAllSounds();
-      setAllSounds(sounds);
-      setSoundCount(sounds.length);
-      return sounds;
-    } catch (error) {
-      console.error('Failed to load sounds:', error);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadSounds = async () => {
     setLoading(true);
     try {
@@ -167,25 +150,36 @@ export default function App() {
   };
 
   const handleSearch = useCallback(async () => {
-    if (searchQuery.trim()) {
-      const sounds = await ensureSoundsLoaded();
-      const matchedResults = searchSounds(sounds, searchQuery);
+    if (!searchQuery.trim()) return;
+    setLoading(true);
+    try {
+      // Server-side search (tsvector GIN index, usually <20ms for <50 results).
+      // Falls back to client-side if the RPC returns nothing AND we already
+      // have allSounds loaded - covers edge cases during transition.
+      let matchedResults = await api.searchSoundsRemote(searchQuery, 100);
 
-      // Check if any result contains NSFW content
+      // Defensive fallback: if server returned nothing AND we have a local
+      // cache of all sounds, try the old in-memory search too.
+      if (matchedResults.length === 0 && allSounds.length > 0) {
+        matchedResults = searchSounds(allSounds, searchQuery);
+      }
+
+      // NSFW gate - pause the render and ask for age verification if needed
       const hasNSFWContent = matchedResults.some(sound => isNSFW(sound.tags));
-
       if (hasNSFWContent && !ageVerified) {
-        // Store pending search and show age verification
         setPendingSearch(searchQuery);
         setShowAgeVerification(true);
         return;
       }
 
-      // Filter NSFW content if not verified
       const filteredResults = filterNSFWSounds(matchedResults, ageVerified);
       setResults(filteredResults);
       setVisibleCount(30);
       setShowResults(true);
+    } catch (error) {
+      console.error('Search failed:', error);
+    } finally {
+      setLoading(false);
     }
   }, [searchQuery, allSounds, ageVerified]);
 
@@ -254,13 +248,11 @@ export default function App() {
       return;
     }
 
-    const sounds = await ensureSoundsLoaded();
+    // Tag click -> same server-side search path as the text search box
     setSearchQuery(tag);
-    const matchedResults = searchSounds(sounds, tag);
+    const matchedResults = await api.searchSoundsRemote(tag, 100);
 
-    // Check if results contain NSFW content
     const hasNSFWContent = matchedResults.some(sound => isNSFW(sound.tags));
-
     if (hasNSFWContent && !ageVerified) {
       setPendingSearch(tag);
       setShowAgeVerification(true);
@@ -273,41 +265,39 @@ export default function App() {
     setShowResults(true);
   };
 
+  // Re-run a deferred search through the server RPC (used by the age gate)
+  const runPendingSearch = async (query: string, nsfwOk: boolean) => {
+    const matchedResults = await api.searchSoundsRemote(query, 100);
+    const filteredResults = filterNSFWSounds(matchedResults, nsfwOk);
+    setResults(filteredResults);
+    setSearchQuery(query);
+    setShowResults(true);
+  };
+
   // Handle age verification confirm
-  const handleAgeVerified = () => {
+  const handleAgeVerified = async () => {
     setAgeVerified(true);
     setAgeVerifiedState(true);
     setShowAgeVerification(false);
-    
-    // Execute pending search if any
+
     if (pendingSearch) {
       if (pendingSearch === '__VIEW_ALL__') {
-        setResults(allSounds);
-        setSearchQuery('');
-        setShowResults(true);
+        handleShowAll();
       } else {
-        const matchedResults = searchSounds(allSounds, pendingSearch);
-        setResults(matchedResults);
-        setSearchQuery(pendingSearch);
-        setShowResults(true);
+        await runPendingSearch(pendingSearch, true);
       }
       setPendingSearch(null);
     }
   };
 
   // Handle age verification decline
-  const handleAgeDeclined = () => {
+  const handleAgeDeclined = async () => {
     setShowAgeVerification(false);
-    setPendingSearch(null);
-    
-    // Show filtered results if there was a pending search
+
     if (pendingSearch && pendingSearch !== '__VIEW_ALL__') {
-      const matchedResults = searchSounds(allSounds, pendingSearch);
-      const filteredResults = filterNSFWSounds(matchedResults, false);
-      setResults(filteredResults);
-      setSearchQuery(pendingSearch);
-      setShowResults(true);
+      await runPendingSearch(pendingSearch, false);
     }
+    setPendingSearch(null);
   };
 
   // Fallback UI while lazy-loaded admin chunks are fetched
