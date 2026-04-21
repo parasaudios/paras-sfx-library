@@ -1,15 +1,18 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { SuggestSoundFormSection } from './components/SuggestSoundFormSection';
-import { Login } from './components/Login';
-import { AdminDashboard } from './components/AdminDashboard';
 import { GoogleDriveAudioPlayer } from './components/GoogleDriveAudioPlayer';
 import { BrowseByTags } from './components/BrowseByTags';
 import { AgeVerification } from './components/AgeVerification';
 import { Toaster } from './components/ui/sonner';
+
+// Admin code is lazy-loaded so visitors (the common case) don't download it.
+// Only fetched once the user opens the login/dashboard.
+const Login          = lazy(() => import('./components/Login').then(m => ({ default: m.Login })));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 import { searchSounds } from './utils/searchUtils';
 import { isAgeVerified, setAgeVerified, filterNSFWSounds, isNSFW } from './utils/ageVerification';
 import * as api from './utils/api';
@@ -307,14 +310,29 @@ export default function App() {
     }
   };
 
+  // Fallback UI while lazy-loaded admin chunks are fetched
+  const adminFallback = (
+    <div className="min-h-screen bg-[#0d1017] flex items-center justify-center text-[#9ca3af]">
+      Loading admin…
+    </div>
+  );
+
   // Show login page if requested
   if (showLogin && !isLoggedIn) {
-    return <Login onLogin={handleLogin} />;
+    return (
+      <Suspense fallback={adminFallback}>
+        <Login onLogin={handleLogin} />
+      </Suspense>
+    );
   }
 
   // Show admin dashboard if logged in
   if (isLoggedIn) {
-    return <AdminDashboard onLogout={handleLogout} />;
+    return (
+      <Suspense fallback={adminFallback}>
+        <AdminDashboard onLogout={handleLogout} />
+      </Suspense>
+    );
   }
 
   return (

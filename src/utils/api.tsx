@@ -74,15 +74,24 @@ export async function getSoundCount(): Promise<number> {
   }
 }
 
+// Columns needed by the list + metadata panel. Omits `source`, `slug`, `filename`
+// (internal), `description` (rarely populated, can be re-fetched on demand),
+// and `updated_at` (not shown). Cuts payload ~20%.
+const SOUND_LIST_COLUMNS =
+  'id,title,tags,audioUrl,downloadUrl,mp3_path,wav_path,has_wav,file_size,' +
+  'duration_seconds,channels,microphone,recorder,format,category,nsfw,' +
+  'listens,downloads,mp3_sample_rate,mp3_bit_depth,wav_sample_rate,wav_bit_depth,' +
+  'created_at';
+
 export async function getAllSounds(): Promise<Sound[]> {
   try {
     const { data, error } = await supabase
       .from('sounds_with_urls')
-      .select('*')
+      .select(SOUND_LIST_COLUMNS)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data as unknown as Sound[]) || [];
   } catch (error) {
     console.error('Error fetching sounds:', error);
     return [];

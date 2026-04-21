@@ -13,3 +13,8 @@ supabase/signing_keys.json
 .DS_Store
 .claude/settings.local.json
 backups/
+
+# Temporary scratch files from one-off scripts (staging dirs, CSV dumps, etc.)
+.tmp_*
+tunnel-proxy-supervisor.log
+tunnel-proxy.log.err
