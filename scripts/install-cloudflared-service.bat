@@ -60,29 +60,53 @@ if exist "%STARTUP_LNK%" (
 )
 
 echo [5/7] Uninstalling any previous cloudflared service...
-"%CLOUDFLARED%" service uninstall
+REM cloudflared's own uninstall sometimes says "not installed" even when sc
+REM sees one - so we also force-delete via sc.exe, then clean registry.
+"%CLOUDFLARED%" service uninstall >nul 2>&1
+sc.exe stop Cloudflared >nul 2>&1
+sc.exe delete Cloudflared >nul 2>&1
 echo Done.
 
-echo [6/7] Cleaning leftover event-log registry key...
-REM A previous install leaves HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Application\Cloudflared
-REM which makes the next 'service install' abort with a non-zero exit code.
+echo [6/7] Cleaning leftover registry keys from prior install...
+REM Event log key - remnant that blocks re-install.
 reg delete "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Application\Cloudflared" /f >nul 2>&1
+REM Service key - in case sc delete didn't fully remove it.
+reg delete "HKLM\SYSTEM\CurrentControlSet\Services\Cloudflared" /f >nul 2>&1
 echo Done.
 
-echo [7/7] Installing service + starting it...
-"%CLOUDFLARED%" service install
-if %errorlevel% neq 0 (
-    echo ERROR: service install failed with exit code %errorlevel%.
+echo [7/7] Installing service and patching it to run the tunnel...
+set "CF_CONFIG=%USERPROFILE%\.cloudflared\config.yml"
+if not exist "%CF_CONFIG%" (
+    echo ERROR: config.yml not found at %CF_CONFIG%
+    echo         Run 'cloudflared tunnel login' + 'cloudflared tunnel create' first.
     exit /b 1
 )
-echo Service registered.
 
-sc config cloudflared start= auto >nul
+"%CLOUDFLARED%" service install
+REM Exit code is often non-zero due to the event-log-warning cruft, ignore -
+REM we check directly whether the service object exists.
+sc.exe query Cloudflared >nul 2>&1
+if errorlevel 1 (
+    echo ERROR: 'sc query' says the service was not created.
+    exit /b 1
+)
+echo Service object exists.
+
+REM Replace the empty binary path with one that actually runs the tunnel.
+REM The space after "binPath=" is REQUIRED - sc.exe syntax.
+sc.exe config Cloudflared binPath= "\"%CLOUDFLARED%\" --config \"%CF_CONFIG%\" tunnel run parasmut-supabase"
+if errorlevel 1 (
+    echo ERROR: failed to set service binary path.
+    exit /b 1
+)
+echo Binary path set.
+
+sc.exe config Cloudflared start= auto >nul
 echo Auto-start configured.
 
-net start cloudflared
-if %errorlevel% neq 0 (
-    echo ERROR: net start cloudflared failed with exit code %errorlevel%.
+net start Cloudflared
+if errorlevel 1 (
+    echo ERROR: net start Cloudflared failed. Check Windows Event Log ^> Application ^> Cloudflared.
     exit /b 1
 )
 
