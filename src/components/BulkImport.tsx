@@ -64,13 +64,13 @@ export function BulkImport({ onImportComplete }: BulkImportProps) {
   };
 
   return (
-    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-8">
+    <div className="bg-[#141820] border border-[#252a35] rounded-lg p-8">
       <div className="flex items-center gap-2 mb-4">
-        <Upload className="size-5 text-purple-400" />
+        <Upload className="size-5 text-[#10b981]" />
         <h3 className="text-white">Bulk Import Sounds</h3>
       </div>
       
-      <p className="text-slate-400 mb-4">
+      <p className="text-[#9ca3af] mb-4">
         Paste JSON array of sounds to import multiple sounds at once.
       </p>
 
@@ -81,24 +81,24 @@ export function BulkImport({ onImportComplete }: BulkImportProps) {
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
             placeholder={`[\n  {\n    "title": "Door Creak",\n    "tags": ["door", "creak", "horror"],\n    "microphone": "Rode NT1-A",\n    "format": "WAV"\n  }\n]`}
-            className="w-full h-64 bg-white/5 border border-white/20 rounded-lg p-4 text-white placeholder:text-slate-500 font-mono text-sm"
+            className="w-full h-64 bg-[#0f1218] border border-[#252a35] rounded-lg p-4 text-white placeholder:text-[#6b7280] font-mono text-sm"
           />
         </div>
 
         <Button
           onClick={handleBulkImport}
           disabled={loading || !jsonInput.trim()}
-          className="w-full bg-purple-600 hover:bg-purple-700"
+          className="w-full bg-[#10b981] hover:bg-[#0d9668]"
         >
           {loading ? 'Importing...' : 'Import Sounds'}
         </Button>
       </div>
 
-      <div className="mt-6 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
-        <p className="text-slate-400 text-sm mb-2">
+      <div className="mt-6 p-4 bg-[#0f1218] rounded-lg border border-[#252a35]">
+        <p className="text-[#9ca3af] text-sm mb-2">
           <strong className="text-white">Format Example:</strong>
         </p>
-        <pre className="text-xs text-slate-400 overflow-x-auto">
+        <pre className="text-xs text-[#9ca3af] overflow-x-auto">
 {`[
   {
     "title": "Sound Title",

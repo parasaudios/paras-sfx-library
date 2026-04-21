@@ -110,9 +110,9 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-[#0d1017]">
       {/* Top Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-sm border-b border-white/10">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0d1017]/90 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <h2 className="text-white text-lg sm:text-xl">Admin Dashboard</h2>
@@ -121,7 +121,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 onClick={() => setActiveTab('add')}
                 variant={activeTab === 'add' ? 'default' : 'ghost'}
                 size="sm"
-                className={`text-xs sm:text-sm ${activeTab === 'add' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'text-white hover:bg-white/10'}`}
+                className={`text-xs sm:text-sm ${activeTab === 'add' ? 'bg-[#10b981] hover:bg-[#0d9668] text-white' : 'text-white hover:bg-white/10'}`}
               >
                 <Plus className="size-3 sm:size-4 sm:mr-2" />
                 <span className="hidden sm:inline">Add Sounds</span>
@@ -130,7 +130,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 onClick={() => setActiveTab('manage')}
                 variant={activeTab === 'manage' ? 'default' : 'ghost'}
                 size="sm"
-                className={`text-xs sm:text-sm ${activeTab === 'manage' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'text-white hover:bg-white/10'}`}
+                className={`text-xs sm:text-sm ${activeTab === 'manage' ? 'bg-[#10b981] hover:bg-[#0d9668] text-white' : 'text-white hover:bg-white/10'}`}
               >
                 <List className="size-3 sm:size-4 sm:mr-2" />
                 <span className="hidden sm:inline">Manage</span>
@@ -139,7 +139,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 onClick={() => setActiveTab('search')}
                 variant={activeTab === 'search' ? 'default' : 'ghost'}
                 size="sm"
-                className={`text-xs sm:text-sm ${activeTab === 'search' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'text-white hover:bg-white/10'}`}
+                className={`text-xs sm:text-sm ${activeTab === 'search' ? 'bg-[#10b981] hover:bg-[#0d9668] text-white' : 'text-white hover:bg-white/10'}`}
               >
                 <Search className="size-3 sm:size-4 sm:mr-2" />
                 <span className="hidden sm:inline">Search</span>
@@ -148,7 +148,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 onClick={() => setActiveTab('suggestions')}
                 variant={activeTab === 'suggestions' ? 'default' : 'ghost'}
                 size="sm"
-                className={`relative text-xs sm:text-sm ${activeTab === 'suggestions' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'text-white hover:bg-white/10'}`}
+                className={`relative text-xs sm:text-sm ${activeTab === 'suggestions' ? 'bg-[#10b981] hover:bg-[#0d9668] text-white' : 'text-white hover:bg-white/10'}`}
               >
                 <MessageSquare className="size-3 sm:size-4 sm:mr-2" />
                 <span className="hidden sm:inline">Suggestions</span>
@@ -162,7 +162,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 onClick={() => setActiveTab('import')}
                 variant={activeTab === 'import' ? 'default' : 'ghost'}
                 size="sm"
-                className={`text-xs sm:text-sm ${activeTab === 'import' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'text-white hover:bg-white/10'}`}
+                className={`text-xs sm:text-sm ${activeTab === 'import' ? 'bg-[#10b981] hover:bg-[#0d9668] text-white' : 'text-white hover:bg-white/10'}`}
               >
                 <Database className="size-3 sm:size-4 sm:mr-2" />
                 <span className="hidden sm:inline">Import</span>
@@ -171,7 +171,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 onClick={() => setActiveTab('tags')}
                 variant={activeTab === 'tags' ? 'default' : 'ghost'}
                 size="sm"
-                className={`text-xs sm:text-sm ${activeTab === 'tags' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'text-white hover:bg-white/10'}`}
+                className={`text-xs sm:text-sm ${activeTab === 'tags' ? 'bg-[#10b981] hover:bg-[#0d9668] text-white' : 'text-white hover:bg-white/10'}`}
               >
                 <Tag className="size-3 sm:size-4 sm:mr-2" />
                 <span className="hidden lg:inline">Tags</span>
@@ -198,7 +198,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
               animate={{ opacity: 1, y: 0 }}
               className="mb-6 sm:mb-8"
             >
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 sm:p-6 lg:p-8">
+              <div className="bg-[#141820] border border-[#252a35] rounded-lg p-4 sm:p-6 lg:p-8">
                 <h2 className="text-white mb-4 sm:mb-6 text-xl sm:text-2xl">Add New Sound Effect</h2>
                 
                 <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
@@ -210,7 +210,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         placeholder="e.g., Door Creak"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-slate-400 h-10 sm:h-12 text-sm sm:text-base"
+                        className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280] h-10 sm:h-12 text-sm sm:text-base"
                         required
                       />
                     </div>
@@ -222,7 +222,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         placeholder="e.g., Rode NT1-A, Zoom H6"
                         value={equipment}
                         onChange={(e) => setEquipment(e.target.value)}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-slate-400 h-10 sm:h-12 text-sm sm:text-base"
+                        className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280] h-10 sm:h-12 text-sm sm:text-base"
                       />
                     </div>
 
@@ -233,7 +233,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         placeholder="e.g., WAV, MP3, FLAC"
                         value={format}
                         onChange={(e) => setFormat(e.target.value)}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-slate-400 h-10 sm:h-12 text-sm sm:text-base"
+                        className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280] h-10 sm:h-12 text-sm sm:text-base"
                       />
                     </div>
 
@@ -244,7 +244,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         placeholder="e.g., door, wood, horror"
                         value={tags}
                         onChange={(e) => setTags(e.target.value)}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-slate-400 h-10 sm:h-12 text-sm sm:text-base"
+                        className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280] h-10 sm:h-12 text-sm sm:text-base"
                       />
                     </div>
                   </div>
@@ -257,17 +257,17 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       placeholder="https://drive.google.com/file/d/..."
                       value={audioUrl}
                       onChange={(e) => setAudioUrl(e.target.value)}
-                      className="bg-white/5 border-white/20 text-white placeholder:text-slate-400 h-10 sm:h-12 text-sm sm:text-base"
+                      className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280] h-10 sm:h-12 text-sm sm:text-base"
                       required
                     />
-                    <p className="text-slate-400 text-xs sm:text-sm">
+                    <p className="text-[#9ca3af] text-xs sm:text-sm">
                       <strong>Important:</strong> Make sure the Google Drive file is set to "Anyone with the link can view"
                     </p>
                   </div>
 
                   <Button
                     type="submit"
-                    className="w-full bg-purple-600 hover:bg-purple-700 h-10 sm:h-12 text-sm sm:text-base"
+                    className="w-full bg-[#10b981] hover:bg-[#0d9668] h-10 sm:h-12 text-sm sm:text-base"
                     disabled={loading}
                   >
                     {loading ? 'Adding...' : 'Add Sound Effect'}
@@ -283,15 +283,15 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
               >
-                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 sm:p-6 text-center">
-                  <p className="text-slate-400 text-sm sm:text-base">
-                    You have <span className="text-purple-400">{customSounds.length}</span> sound{customSounds.length !== 1 ? 's' : ''} in your library
+                <div className="bg-[#141820] border border-[#252a35] rounded-lg p-4 sm:p-6 text-center">
+                  <p className="text-[#9ca3af] text-sm sm:text-base">
+                    You have <span className="text-[#10b981]">{customSounds.length}</span> sound{customSounds.length !== 1 ? 's' : ''} in your library
                   </p>
                   <Button
                     onClick={() => setActiveTab('manage')}
                     variant="ghost"
                     size="sm"
-                    className="text-purple-400 hover:text-purple-300 hover:bg-purple-400/10 mt-2 text-xs sm:text-sm"
+                    className="text-[#10b981] hover:text-[#0d9668] hover:bg-[#10b981]/10 mt-2 text-xs sm:text-sm"
                   >
                     View & Manage Sounds →
                   </Button>

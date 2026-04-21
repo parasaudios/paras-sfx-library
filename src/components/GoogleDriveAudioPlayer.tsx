@@ -11,7 +11,8 @@ interface GoogleDriveAudioPlayerProps {
   index: number;
 }
 
-const getFileId = (url: string): string | null => {
+const getFileId = (url: string | null | undefined): string | null => {
+  if (!url) return null;
   const viewMatch = url.match(/\/file\/d\/([^\/]+)/);
   if (viewMatch) return viewMatch[1];
   const openMatch = url.match(/[?&]id=([^&]+)/);

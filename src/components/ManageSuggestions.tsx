@@ -70,22 +70,22 @@ export function ManageSuggestions() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-white mb-2">Sound Effect Suggestions</h2>
-            <p className="text-slate-400">
+            <p className="text-[#9ca3af]">
               Review and manage user suggestions for new sound effects
             </p>
           </div>
           <div className="text-right">
-            <div className="text-sm text-slate-400">Total Suggestions</div>
+            <div className="text-sm text-[#9ca3af]">Total Suggestions</div>
             <div className="text-white">
-              <span className="text-purple-400">{unreadCount}</span> unread / {suggestions.length} total
+              <span className="text-[#10b981]">{unreadCount}</span> unread / {suggestions.length} total
             </div>
           </div>
         </div>
 
         {suggestions.length === 0 ? (
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-12 text-center">
-            <p className="text-slate-400">No suggestions yet</p>
-            <p className="text-slate-500 text-sm mt-2">
+          <div className="bg-[#141820] border border-[#252a35] rounded-lg p-12 text-center">
+            <p className="text-[#9ca3af]">No suggestions yet</p>
+            <p className="text-[#6b7280] text-sm mt-2">
               When users submit sound effect suggestions, they'll appear here
             </p>
           </div>
@@ -97,10 +97,10 @@ export function ManageSuggestions() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className={`bg-white/5 backdrop-blur-sm border rounded-lg p-6 ${
+                className={`bg-[#141820] backdrop-blur-sm border rounded-lg p-6 ${
                   suggestion.isRead 
-                    ? 'border-white/10 opacity-60' 
-                    : 'border-purple-500/30 shadow-lg shadow-purple-500/10'
+                    ? 'border-[#252a35] opacity-60' 
+                    : 'border-[#10b981]/30 shadow-lg shadow-[#10b981]/10'
                 }`}
               >
                 {/* Header with Status */}
@@ -108,8 +108,8 @@ export function ManageSuggestions() {
                   <Badge 
                     variant={suggestion.isRead ? "secondary" : "default"}
                     className={suggestion.isRead 
-                      ? "bg-slate-600 text-slate-200" 
-                      : "bg-purple-600 text-white"
+                      ? "bg-[#1f2430] text-[#d1d5db]" 
+                      : "bg-[#10b981] text-white"
                     }
                   >
                     {suggestion.isRead ? 'Read' : 'New'}
@@ -119,11 +119,11 @@ export function ManageSuggestions() {
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleReadStatus(suggestion.id)}
-                      className="h-8 w-8 p-0 hover:bg-white/10"
+                      className="h-8 w-8 p-0 hover:bg-[#1f2430]"
                       title={suggestion.isRead ? "Mark as unread" : "Mark as read"}
                     >
                       {suggestion.isRead ? (
-                        <Circle className="size-4 text-slate-400" />
+                        <Circle className="size-4 text-[#9ca3af]" />
                       ) : (
                         <CheckCircle2 className="size-4 text-green-400" />
                       )}
@@ -142,7 +142,7 @@ export function ManageSuggestions() {
 
                 {/* Sound Name */}
                 <div className="mb-4">
-                  <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">
+                  <div className="text-xs text-[#9ca3af] uppercase tracking-wider mb-1">
                     Sound Effect
                   </div>
                   <h3 className="text-white">{suggestion.soundName}</h3>
@@ -151,10 +151,10 @@ export function ManageSuggestions() {
                 {/* Category */}
                 {suggestion.category && (
                   <div className="mb-4">
-                    <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">
+                    <div className="text-xs text-[#9ca3af] uppercase tracking-wider mb-1">
                       Category
                     </div>
-                    <Badge variant="outline" className="border-purple-500/30 text-purple-300">
+                    <Badge variant="outline" className="border-[#10b981]/30 text-[#0d9668]">
                       {suggestion.category}
                     </Badge>
                   </div>
@@ -163,18 +163,18 @@ export function ManageSuggestions() {
                 {/* Description */}
                 {suggestion.description && (
                   <div className="mb-4">
-                    <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">
+                    <div className="text-xs text-[#9ca3af] uppercase tracking-wider mb-1">
                       Details
                     </div>
-                    <p className="text-slate-300 text-sm line-clamp-3">
+                    <p className="text-[#d1d5db] text-sm line-clamp-3">
                       {suggestion.description}
                     </p>
                   </div>
                 )}
 
                 {/* Timestamp */}
-                <div className="pt-4 border-t border-white/10">
-                  <div className="text-xs text-slate-500">
+                <div className="pt-4 border-t border-[#252a35]">
+                  <div className="text-xs text-[#6b7280]">
                     {new Date(suggestion.submittedAt).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',

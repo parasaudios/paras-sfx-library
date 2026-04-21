@@ -76,24 +76,24 @@ export function SearchSounds() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-8">
+        <div className="bg-[#141820] border border-[#252a35] rounded-lg p-8">
           <h2 className="text-white mb-6">Search Sound Effects</h2>
           
           <div className="flex gap-3">
             <div className="relative flex-1">
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 size-5" />
+              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#9ca3af] size-5" />
               <Input
                 type="text"
                 placeholder="Type the sfx you're looking for.."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="pl-11 h-14 bg-white/5 border-white/20 text-white placeholder:text-slate-400"
+                className="pl-11 h-14 bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280]"
               />
             </div>
             <Button
               onClick={handleSearch}
-              className="h-14 px-8 bg-purple-600 hover:bg-purple-700"
+              className="h-14 px-8 bg-[#10b981] hover:bg-[#0d9668]"
             >
               Search
             </Button>
@@ -101,7 +101,7 @@ export function SearchSounds() {
               <Button
                 onClick={handleClearSearch}
                 variant="outline"
-                className="h-14 px-8 border-white/20 bg-transparent text-white hover:bg-white/10"
+                className="h-14 px-8 border-[#252a35] bg-transparent text-white hover:bg-[#1f2430]"
               >
                 <X className="size-4 mr-2" />
                 Clear
@@ -121,7 +121,7 @@ export function SearchSounds() {
             <h3 className="text-white mb-2">
               Search Results for "{searchQuery}"
             </h3>
-            <p className="text-slate-400">Found {results.length} sound{results.length !== 1 ? 's' : ''}</p>
+            <p className="text-[#9ca3af]">Found {results.length} sound{results.length !== 1 ? 's' : ''}</p>
           </div>
 
           {results.length > 0 ? (
@@ -135,9 +135,9 @@ export function SearchSounds() {
               ))}
             </div>
           ) : (
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-12 text-center">
-              <p className="text-slate-400 text-lg mb-4">No results found</p>
-              <p className="text-slate-500 text-sm">
+            <div className="bg-[#141820] border border-[#252a35] rounded-lg p-12 text-center">
+              <p className="text-[#9ca3af] text-lg mb-4">No results found</p>
+              <p className="text-[#6b7280] text-sm">
                 Try different search terms or check the Manage Sounds section
               </p>
             </div>
@@ -150,15 +150,15 @@ export function SearchSounds() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-12 text-center"
+          className="bg-[#141820] border border-[#252a35] rounded-lg p-12 text-center"
         >
-          <SearchIcon className="size-16 text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-400 text-lg mb-2">Start searching for sound effects</p>
-          <p className="text-slate-500 text-sm">
+          <SearchIcon className="size-16 text-[#6b7280] mx-auto mb-4" />
+          <p className="text-[#9ca3af] text-lg mb-2">Start searching for sound effects</p>
+          <p className="text-[#6b7280] text-sm">
             Search by title, tags, equipment, or format
           </p>
-          <div className="mt-6 text-slate-500 text-sm">
-            <p>Total sounds in library: <span className="text-purple-400">{customSounds.length}</span></p>
+          <div className="mt-6 text-[#6b7280] text-sm">
+            <p>Total sounds in library: <span className="text-[#10b981]">{customSounds.length}</span></p>
           </div>
         </motion.div>
       )}

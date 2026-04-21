@@ -139,19 +139,19 @@ export function ManageSounds() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-6">
+        <div className="bg-[#141820] border border-[#252a35] rounded-lg p-6">
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 size-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#9ca3af] size-5" />
               <Input
                 type="text"
                 placeholder="Search by title, tag, microphone, or format..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-11 h-12 bg-white/5 border-white/20 text-white placeholder:text-slate-400"
+                className="pl-11 h-12 bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280]"
               />
             </div>
-            <div className="text-slate-400 whitespace-nowrap">
+            <div className="text-[#9ca3af] whitespace-nowrap">
               {filteredSounds.length} of {customSounds.length} sounds
             </div>
           </div>
@@ -168,7 +168,7 @@ export function ManageSounds() {
           {filteredSounds.map((sound) => (
             <div
               key={sound.id}
-              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-6"
+              className="bg-[#141820] border border-[#252a35] rounded-lg p-6"
             >
               {editingId === sound.id && editForm ? (
                 // Edit Mode
@@ -188,7 +188,7 @@ export function ManageSounds() {
                         onClick={handleCancelEdit}
                         size="sm"
                         variant="ghost"
-                        className="text-slate-400 hover:text-white hover:bg-white/10"
+                        className="text-[#9ca3af] hover:text-white hover:bg-[#1f2430]"
                       >
                         <X className="size-4 mr-2" />
                         Cancel
@@ -202,7 +202,7 @@ export function ManageSounds() {
                       <Input
                         value={editForm.title}
                         onChange={(e) => handleEditFormChange('title', e.target.value)}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-slate-400"
+                        className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280]"
                       />
                     </div>
 
@@ -211,7 +211,7 @@ export function ManageSounds() {
                       <Input
                         value={editForm.microphone}
                         onChange={(e) => handleEditFormChange('microphone', e.target.value)}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-slate-400"
+                        className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280]"
                       />
                     </div>
 
@@ -220,7 +220,7 @@ export function ManageSounds() {
                       <Input
                         value={editForm.format}
                         onChange={(e) => handleEditFormChange('format', e.target.value)}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-slate-400"
+                        className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280]"
                       />
                     </div>
 
@@ -229,7 +229,7 @@ export function ManageSounds() {
                       <Input
                         value={editForm.tags}
                         onChange={(e) => handleEditFormChange('tags', e.target.value)}
-                        className="bg-white/5 border-white/20 text-white placeholder:text-slate-400"
+                        className="bg-[#0f1218] border-[#252a35] text-white placeholder:text-[#6b7280]"
                       />
                     </div>
                   </div>
@@ -240,17 +240,17 @@ export function ManageSounds() {
                   <div className="flex-1 space-y-3">
                     <h3 className="text-white mb-3">{sound.title}</h3>
 
-                    <div className="space-y-2 text-slate-300 text-sm">
+                    <div className="space-y-2 text-[#d1d5db] text-sm">
                       {sound.microphone && (
                         <div>
-                          <span className="text-slate-400">Microphone:</span>{' '}
+                          <span className="text-[#9ca3af]">Microphone:</span>{' '}
                           {capitalizeWords(sound.microphone)}
                         </div>
                       )}
 
                       {sound.format && (
                         <div>
-                          <span className="text-slate-400">Audio Format:</span> {capitalizeWords(sound.format)}
+                          <span className="text-[#9ca3af]">Audio Format:</span> {capitalizeWords(sound.format)}
                         </div>
                       )}
 
@@ -262,11 +262,11 @@ export function ManageSounds() {
 
                       {sound.tags.length > 0 && (
                         <div className="flex items-center gap-1 flex-wrap">
-                          <span className="text-slate-400">Tags:</span>
+                          <span className="text-[#9ca3af]">Tags:</span>
                           {sound.tags.map((tag, index) => (
                             <span
                               key={`${tag}-${index}`}
-                              className="inline-block text-xs bg-purple-600/30 text-purple-200 px-2 py-1 rounded-full"
+                              className="inline-block text-xs bg-[#10b981]/30 text-[#10b981] px-2 py-1 rounded-full"
                             >
                               {formatTagForDisplay(tag)}
                             </span>
@@ -303,16 +303,16 @@ export function ManageSounds() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-12 text-center"
+          className="bg-[#141820] border border-[#252a35] rounded-lg p-12 text-center"
         >
-          <p className="text-slate-400 text-lg">
+          <p className="text-[#9ca3af] text-lg">
             {searchQuery ? 'No sounds found matching your search' : 'No sounds added yet'}
           </p>
           {searchQuery && (
             <Button
               onClick={() => setSearchQuery('')}
               variant="ghost"
-              className="text-purple-400 hover:text-purple-300 hover:bg-purple-400/10 mt-4"
+              className="text-[#10b981] hover:text-[#0d9668] hover:bg-[#10b981]/10 mt-4"
             >
               Clear search
             </Button>

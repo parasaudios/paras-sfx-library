@@ -76,7 +76,7 @@ export function ManageTags() {
     return (
       <div className="max-w-7xl mx-auto">
         <div className="text-center py-12">
-          <p className="text-slate-400">Loading tags...</p>
+          <p className="text-[#9ca3af]">Loading tags...</p>
         </div>
       </div>
     );
@@ -91,26 +91,26 @@ export function ManageTags() {
       >
         <div className="mb-6">
           <h2 className="text-white mb-2">Manage Search Tags</h2>
-          <p className="text-slate-400">
+          <p className="text-[#9ca3af]">
             Select tags from your sound library to display in the "Browse by Tag" section on the homepage
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* All Available Tags */}
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-6">
+          <div className="bg-[#141820] border border-[#252a35] rounded-lg p-6">
             <h3 className="text-white mb-4 flex items-center gap-2">
               <Tag className="size-5" />
               All Tags from Library ({allAvailableTags.length})
             </h3>
-            <p className="text-slate-400 text-sm mb-4">
+            <p className="text-[#9ca3af] text-sm mb-4">
               Click on a tag to add it to the homepage
             </p>
 
             {allAvailableTags.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-slate-400">No available tags</p>
-                <p className="text-slate-500 text-sm mt-2">
+                <p className="text-[#9ca3af]">No available tags</p>
+                <p className="text-[#6b7280] text-sm mt-2">
                   {currentTags.length > 0 
                     ? 'All tags from your library are already in use' 
                     : 'Add tags to your sounds to see them here'}
@@ -125,7 +125,7 @@ export function ManageTags() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.01 }}
                     onClick={() => handleAddToCurrentTags(tag)}
-                    className="group px-4 py-2 bg-slate-600/20 hover:bg-purple-600/40 border border-slate-500/30 hover:border-purple-500/50 rounded-full text-slate-300 hover:text-white transition-all text-sm flex items-center gap-2"
+                    className="group px-4 py-2 bg-[#1f2430] hover:bg-[#10b981]/40 border border-[#252a35] hover:border-[#10b981]/50 rounded-full text-[#d1d5db] hover:text-white transition-all text-sm flex items-center gap-2"
                   >
                     <span>{formatTagForDisplay(tag)}</span>
                     <ArrowRight className="size-3 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -136,19 +136,19 @@ export function ManageTags() {
           </div>
 
           {/* Current Tags (Displayed on Homepage) */}
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-6">
+          <div className="bg-[#141820] border border-[#252a35] rounded-lg p-6">
             <h3 className="text-white mb-4 flex items-center gap-2">
-              <Tag className="size-5 text-purple-400" />
+              <Tag className="size-5 text-[#10b981]" />
               Current Tags ({currentTags.length})
             </h3>
-            <p className="text-slate-400 text-sm mb-4">
+            <p className="text-[#9ca3af] text-sm mb-4">
               These tags appear in the "Browse by Tag" section
             </p>
 
             {currentTags.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-slate-400">No tags selected</p>
-                <p className="text-slate-500 text-sm mt-2">
+                <p className="text-[#9ca3af]">No tags selected</p>
+                <p className="text-[#6b7280] text-sm mt-2">
                   Click on tags from the left to add them
                 </p>
               </div>
@@ -161,7 +161,7 @@ export function ManageTags() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.01 }}
                     onClick={() => handleRemoveFromCurrentTags(tag)}
-                    className="group px-4 py-2 bg-purple-600/20 hover:bg-red-600/40 border border-purple-500/30 hover:border-red-500/50 rounded-full text-purple-300 hover:text-white transition-all text-sm flex items-center gap-2"
+                    className="group px-4 py-2 bg-[#10b981]/20 hover:bg-red-600/40 border border-[#10b981]/30 hover:border-red-500/50 rounded-full text-[#0d9668] hover:text-white transition-all text-sm flex items-center gap-2"
                   >
                     <ArrowLeft className="size-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <span>{formatTagForDisplay(tag)}</span>
