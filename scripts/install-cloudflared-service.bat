@@ -56,7 +56,7 @@ if exist "%STARTUP_LNK%" (
     del /f /q "%STARTUP_LNK%"
     echo Removed.
 ) else (
-    echo Not present (already removed).
+    echo Not present - already removed.
 )
 
 echo [5/6] Uninstalling any previous cloudflared service (idempotent)...
