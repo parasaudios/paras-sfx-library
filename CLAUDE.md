@@ -81,6 +81,18 @@ proxy within 5 seconds if it ever exits. Logs:
 
 To uninstall: delete `ParaSFX-TunnelProxy.vbs` from `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\`.
 
+#### Cloudflare Tunnel as a Windows Service (one-time setup)
+`cloudflared` also needs to be running for the public hostname to resolve.
+Rather than relying on a logon shortcut (which dies if the user logs out),
+install it as a proper Windows service:
+```cmd
+REM Right-click this file -> "Run as administrator" (needs UAC elevation)
+scripts\install-cloudflared-service.bat
+```
+The script removes any old logon shortcut, registers `cloudflared` as an
+auto-start service, and launches it. After that `sfxlib-api.parasfx.com`
+survives reboots without login. Check state with `sc query cloudflared`.
+
 #### CRITICAL: Backup Before Any Docker Changes
 **NEVER restart, recreate, or modify Docker containers/volumes without first running a full backup.**
 ```powershell
