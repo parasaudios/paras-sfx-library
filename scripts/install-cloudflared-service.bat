@@ -59,11 +59,17 @@ if exist "%STARTUP_LNK%" (
     echo Not present - already removed.
 )
 
-echo [5/6] Uninstalling any previous cloudflared service (idempotent)...
+echo [5/7] Uninstalling any previous cloudflared service...
 "%CLOUDFLARED%" service uninstall
-echo    (exit code: %errorlevel% - anything non-zero here is fine if no service existed)
+echo Done.
 
-echo [6/6] Installing service + starting it...
+echo [6/7] Cleaning leftover event-log registry key...
+REM A previous install leaves HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Application\Cloudflared
+REM which makes the next 'service install' abort with a non-zero exit code.
+reg delete "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Application\Cloudflared" /f >nul 2>&1
+echo Done.
+
+echo [7/7] Installing service + starting it...
 "%CLOUDFLARED%" service install
 if %errorlevel% neq 0 (
     echo ERROR: service install failed with exit code %errorlevel%.
