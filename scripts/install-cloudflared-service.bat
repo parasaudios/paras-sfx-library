@@ -20,7 +20,7 @@ echo.
 type "%LOGFILE%"
 echo.
 if %RC% neq 0 (
-    echo *** Script finished with errors (exit code %RC%). ***
+    echo *** Script finished with errors. Exit code: %RC% ***
 ) else (
     echo *** Script finished successfully. ***
 )
