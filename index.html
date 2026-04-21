@@ -4,7 +4,12 @@
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Search Bar with Audio Results</title>
+      <title>Para's SFX Library</title>
+      <!-- Preconnect to the Supabase API / storage domain so the TLS+DNS
+           handshake runs in parallel with HTML parsing. Shaves ~150-300ms
+           off the first request for sounds / audio files. -->
+      <link rel="preconnect" href="https://sfxlib-api.parasfx.com" crossorigin />
+      <link rel="dns-prefetch" href="https://sfxlib-api.parasfx.com" />
     </head>
 
     <body>

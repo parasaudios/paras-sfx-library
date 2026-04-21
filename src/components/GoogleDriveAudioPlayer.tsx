@@ -4,6 +4,7 @@ import { Slider } from './ui/slider';
 import { capitalizeWords } from '../utils/formatters';
 import { formatTagForDisplay } from '../utils/tagUtils';
 import { supabaseUrl } from '../utils/supabase/info';
+import * as api from '../utils/api';
 import type { Sound } from '../types/index';
 
 interface GoogleDriveAudioPlayerProps {
@@ -45,6 +46,14 @@ const formatDate = (dateStr: string): string => {
   });
 };
 
+// Global event bus so only one audio plays at a time.
+// When any card starts playing, it fires this event - every other card that
+// was mid-playback pauses itself.
+const SFX_PLAY_EVENT = 'sfx-lib:play';
+function broadcastPlay(audio: HTMLAudioElement) {
+  window.dispatchEvent(new CustomEvent(SFX_PLAY_EVENT, { detail: audio }));
+}
+
 function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -53,6 +62,7 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
   const [volume, setVolume] = useState(1);
   const [showMeta, setShowMeta] = useState(false);
   const [audioLoaded, setAudioLoaded] = useState(false);
+  const listenCounted = useRef(false);
 
   const { isGDrive, embedUrl, dlUrl, srcUrl } = useMemo(() => {
     const fid = getFileId(sound.audioUrl);
@@ -79,10 +89,22 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
     a.addEventListener('timeupdate', onTime);
     a.addEventListener('loadedmetadata', onMeta);
     a.addEventListener('ended', onEnd);
+
+    // Pause this player if another one starts (single-instance playback)
+    const onOtherPlay = (e: Event) => {
+      const other = (e as CustomEvent<HTMLAudioElement>).detail;
+      if (other !== a && !a.paused) {
+        a.pause();
+        setIsPlaying(false);
+      }
+    };
+    window.addEventListener(SFX_PLAY_EVENT, onOtherPlay);
+
     return () => {
       a.removeEventListener('timeupdate', onTime);
       a.removeEventListener('loadedmetadata', onMeta);
       a.removeEventListener('ended', onEnd);
+      window.removeEventListener(SFX_PLAY_EVENT, onOtherPlay);
     };
   }, [srcUrl]);
 
@@ -101,8 +123,16 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
     else {
       // Ensure src is loading before playing
       if (a.preload === 'none') a.preload = 'auto';
+      // Pause any other card that was playing
+      broadcastPlay(a);
       a.play().catch(() => setIsPlaying(false));
       setIsPlaying(true);
+      // Increment listen count once per sound per mount
+      // (fire-and-forget - we don't block playback on the network call)
+      if (!listenCounted.current) {
+        listenCounted.current = true;
+        void api.incrementListen(sound.id);
+      }
     }
   };
 
@@ -128,6 +158,8 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    // Fire-and-forget download counter increment
+    void api.incrementDownload(sound.id);
   };
 
   const dur = audioLoaded && duration > 0 ? duration : (sound.duration_seconds || 0);

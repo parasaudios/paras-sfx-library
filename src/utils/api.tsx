@@ -117,6 +117,25 @@ export async function getSounds(page: number = 0, pageSize: number = 30): Promis
   }
 }
 
+// Fire-and-forget play/download counter bumps. We don't await these in the UI -
+// they're best-effort telemetry and must never block playback or download.
+export async function incrementListen(soundId: string): Promise<void> {
+  try {
+    await supabase.rpc('increment_listen', { sound_id: soundId });
+  } catch (error) {
+    // Never surface this - it's non-critical
+    if (import.meta.env.DEV) console.warn('incrementListen failed:', error);
+  }
+}
+
+export async function incrementDownload(soundId: string): Promise<void> {
+  try {
+    await supabase.rpc('increment_download', { sound_id: soundId });
+  } catch (error) {
+    if (import.meta.env.DEV) console.warn('incrementDownload failed:', error);
+  }
+}
+
 export async function createSound(sound: {
   title: string;
   tags?: string[];
