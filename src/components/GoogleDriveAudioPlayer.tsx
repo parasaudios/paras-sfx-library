@@ -177,17 +177,16 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
     setVolume(v[0]);
   };
 
-  // Resolve helper (same rule as the <audio> src)
-  const resolveUrl = (path: string | null | undefined): string | null => {
-    if (!path) return null;
-    return path.startsWith('/') ? `${supabaseUrl}${path}` : path;
-  };
-
-  const mp3Url = useMemo(() => resolveUrl(sound.mp3_path), [sound.mp3_path]);
-  const wavUrl = useMemo(() => {
-    // has_wav guards that the wav actually exists in storage
-    return sound.has_wav ? resolveUrl(sound.wav_path) : null;
-  }, [sound.wav_path, sound.has_wav]);
+  // Build absolute storage URLs from the bare filename in mp3_path / wav_path.
+  const STORAGE_PREFIX = `${supabaseUrl}/storage/v1/object/public/sounds/`;
+  const mp3Url = useMemo(
+    () => (sound.mp3_path ? STORAGE_PREFIX + sound.mp3_path : null),
+    [sound.mp3_path]
+  );
+  const wavUrl = useMemo(
+    () => (sound.has_wav && sound.wav_path ? STORAGE_PREFIX + sound.wav_path : null),
+    [sound.wav_path, sound.has_wav]
+  );
 
   // Cross-origin downloads: the <a download> attribute is ignored when the
   // href is on a different origin, so browsers just open the audio inline.
@@ -267,8 +266,9 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
           </div>
         ) : null}
 
-        {/* Download */}
-        {mp3Url && wavUrl ? (
+        {/* Download — always presents an MP3/WAV picker; unavailable formats
+            are listed but disabled so users can see what's offered. */}
+        {(mp3Url || wavUrl) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -281,24 +281,29 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="bg-[#181c24] border-[#252a35] text-[#e8eaed] min-w-[14rem]">
-              <DropdownMenuItem onSelect={() => downloadAs(mp3Url, 'mp3')} className="cursor-pointer focus:bg-[#1f2430]">
-                MP3 <span className="ml-auto text-[11px] text-[#9ca3af]">smaller</span>
+              <DropdownMenuItem
+                disabled={!mp3Url}
+                onSelect={() => mp3Url && downloadAs(mp3Url, 'mp3')}
+                className="cursor-pointer focus:bg-[#1f2430] data-[disabled]:opacity-40 data-[disabled]:cursor-not-allowed"
+              >
+                MP3
+                <span className="ml-auto text-[11px] text-[#9ca3af]">
+                  {mp3Url ? 'smaller' : 'not available'}
+                </span>
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => downloadAs(wavUrl, 'wav')} className="cursor-pointer focus:bg-[#1f2430]">
-                WAV <span className="ml-auto text-[11px] text-[#9ca3af]">original quality</span>
+              <DropdownMenuItem
+                disabled={!wavUrl}
+                onSelect={() => wavUrl && downloadAs(wavUrl, 'wav')}
+                className="cursor-pointer focus:bg-[#1f2430] data-[disabled]:opacity-40 data-[disabled]:cursor-not-allowed"
+              >
+                WAV
+                <span className="ml-auto text-[11px] text-[#9ca3af]">
+                  {wavUrl ? 'original quality' : 'not available'}
+                </span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : (mp3Url || wavUrl) ? (
-          <button
-            disabled={downloading}
-            onClick={() => downloadAs((mp3Url || wavUrl)!, mp3Url ? 'mp3' : 'wav')}
-            className="w-full h-10 rounded-lg bg-[#10b981] hover:bg-[#0d9668] text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
-          >
-            <Download className="size-4" />
-            {downloading ? 'Downloading…' : `Download ${mp3Url ? 'MP3' : 'WAV'}`}
-          </button>
-        ) : null}
+        )}
 
         {/* Tags */}
         {sound.tags?.length > 0 && (
