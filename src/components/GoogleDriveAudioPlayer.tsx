@@ -1,6 +1,13 @@
 import { useMemo, useRef, useState, useEffect, memo } from 'react';
 import { Download, Play, Pause, Volume2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Slider } from './ui/slider';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from './ui/dropdown-menu';
+import { toast } from 'sonner';
 import { capitalizeWords } from '../utils/formatters';
 import { formatTagForDisplay } from '../utils/tagUtils';
 import { supabaseUrl } from '../utils/supabase/info';
@@ -170,16 +177,45 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
     setVolume(v[0]);
   };
 
-  const dl = () => {
-    const a = document.createElement('a');
-    a.href = dlUrl;
-    a.download = `${sound.title}.${sound.has_wav ? 'wav' : 'mp3'}`;
-    a.target = '_blank';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    // Fire-and-forget download counter increment
-    void api.incrementDownload(sound.id);
+  // Resolve helper (same rule as the <audio> src)
+  const resolveUrl = (path: string | null | undefined): string | null => {
+    if (!path) return null;
+    return path.startsWith('/') ? `${supabaseUrl}${path}` : path;
+  };
+
+  const mp3Url = useMemo(() => resolveUrl(sound.mp3_path), [sound.mp3_path]);
+  const wavUrl = useMemo(() => {
+    // has_wav guards that the wav actually exists in storage
+    return sound.has_wav ? resolveUrl(sound.wav_path) : null;
+  }, [sound.wav_path, sound.has_wav]);
+
+  // Cross-origin downloads: the <a download> attribute is ignored when the
+  // href is on a different origin, so browsers just open the audio inline.
+  // We fetch the bytes ourselves, wrap in a blob: URL, and trigger the
+  // download off that — which IS same-origin and therefore respects .download.
+  const [downloading, setDownloading] = useState(false);
+  const downloadAs = async (url: string, ext: 'mp3' | 'wav') => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = `${sound.title}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+      void api.incrementDownload(sound.id);
+    } catch (err) {
+      console.error('Download failed:', err);
+      toast.error('Download failed — please try again');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const dur = audioLoaded && duration > 0 ? duration : (sound.duration_seconds || 0);
@@ -232,13 +268,37 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
         ) : null}
 
         {/* Download */}
-        <button
-          onClick={dl}
-          className="w-full h-10 rounded-lg bg-[#10b981] hover:bg-[#0d9668] text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors"
-        >
-          <Download className="size-4" />
-          Download
-        </button>
+        {mp3Url && wavUrl ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                disabled={downloading}
+                className="w-full h-10 rounded-lg bg-[#10b981] hover:bg-[#0d9668] text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+              >
+                <Download className="size-4" />
+                {downloading ? 'Downloading…' : 'Download'}
+                <ChevronDown className="size-3 opacity-70" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="bg-[#181c24] border-[#252a35] text-[#e8eaed] min-w-[14rem]">
+              <DropdownMenuItem onSelect={() => downloadAs(mp3Url, 'mp3')} className="cursor-pointer focus:bg-[#1f2430]">
+                MP3 <span className="ml-auto text-[11px] text-[#9ca3af]">smaller</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => downloadAs(wavUrl, 'wav')} className="cursor-pointer focus:bg-[#1f2430]">
+                WAV <span className="ml-auto text-[11px] text-[#9ca3af]">original quality</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (mp3Url || wavUrl) ? (
+          <button
+            disabled={downloading}
+            onClick={() => downloadAs((mp3Url || wavUrl)!, mp3Url ? 'mp3' : 'wav')}
+            className="w-full h-10 rounded-lg bg-[#10b981] hover:bg-[#0d9668] text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+          >
+            <Download className="size-4" />
+            {downloading ? 'Downloading…' : `Download ${mp3Url ? 'MP3' : 'WAV'}`}
+          </button>
+        ) : null}
 
         {/* Tags */}
         {sound.tags?.length > 0 && (

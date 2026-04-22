@@ -27,10 +27,14 @@ export default function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [allSounds, setAllSounds] = useState<Sound[]>([]);
-  const [soundCount, setSoundCount] = useState<number>(0);
+  // Seed the count from localStorage (previous session's value) so the first
+  // paint shows a number instead of "Loading..." while the fresh count fetches.
+  const [soundCount, setSoundCount] = useState<number>(() => api.getCachedSoundCount() ?? 0);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [countLoading, setCountLoading] = useState(true);
+  // Only show the "Loading..." placeholder if we don't already have a cached
+  // count from a previous visit. Return visitors never see the placeholder.
+  const [countLoading, setCountLoading] = useState(() => api.getCachedSoundCount() === null);
   const [showTags, setShowTags] = useState(false);
   const [managedTags, setManagedTags] = useState<string[]>([]);
   const [ageVerified, setAgeVerifiedState] = useState(isAgeVerified());
@@ -116,7 +120,10 @@ export default function App() {
   }, []);
 
   const loadSoundCount = async () => {
-    setCountLoading(true);
+    // Only flip to the "Loading..." placeholder if we have no cached value
+    // to show. Return visitors see their previous count stay put while the
+    // fresh one is fetched silently in the background.
+    if (api.getCachedSoundCount() === null) setCountLoading(true);
     try {
       const count = await api.getSoundCount();
       setSoundCount(count);

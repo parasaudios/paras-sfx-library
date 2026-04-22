@@ -60,14 +60,32 @@ export function onAuthStateChange(callback: (session: any) => void) {
 
 // ── Sounds ──────────────────────────────────────────────────────────────────
 
+// Sound count: stored in localStorage for instant paint on return visits,
+// then refreshed in the background via an estimated-count query (uses the
+// Postgres planner's cached statistic, ~2-5ms on the DB side). For a display
+// like "1,347 sounds" a few-row drift is invisible to users.
+const COUNT_CACHE_KEY = 'sfxlib:soundCount';
+
+export function getCachedSoundCount(): number | null {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    const raw = localStorage.getItem(COUNT_CACHE_KEY);
+    if (!raw) return null;
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch { return null; }
+}
+
 export async function getSoundCount(): Promise<number> {
   try {
     const { count, error } = await supabase
       .from('sounds_with_urls')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'estimated', head: true });
 
     if (error) throw error;
-    return count || 0;
+    const n = count || 0;
+    try { localStorage.setItem(COUNT_CACHE_KEY, String(n)); } catch { /* private mode / quota */ }
+    return n;
   } catch (error) {
     console.error('Error fetching sound count:', error);
     return 0;
