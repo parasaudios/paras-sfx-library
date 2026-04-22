@@ -1,12 +1,15 @@
 import { useMemo, useRef, useState, useEffect, memo } from 'react';
-import { Download, Play, Pause, Volume2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Download, Play, Pause, Volume2, ChevronDown, ChevronUp, FileAudio, FileMusic, Loader2 } from 'lucide-react';
 import { Slider } from './ui/slider';
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from './ui/dropdown-menu';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from './ui/dialog';
 import { toast } from 'sonner';
 import { capitalizeWords } from '../utils/formatters';
 import { formatTagForDisplay } from '../utils/tagUtils';
@@ -192,10 +195,12 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
   // href is on a different origin, so browsers just open the audio inline.
   // We fetch the bytes ourselves, wrap in a blob: URL, and trigger the
   // download off that — which IS same-origin and therefore respects .download.
-  const [downloading, setDownloading] = useState(false);
+  const [downloadingFormat, setDownloadingFormat] = useState<'mp3' | 'wav' | null>(null);
+  const [downloadOpen, setDownloadOpen] = useState(false);
+
   const downloadAs = async (url: string, ext: 'mp3' | 'wav') => {
-    if (downloading) return;
-    setDownloading(true);
+    if (downloadingFormat) return;
+    setDownloadingFormat(ext);
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -209,11 +214,13 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
       void api.incrementDownload(sound.id);
+      toast.success(`${ext.toUpperCase()} downloaded`);
+      setDownloadOpen(false);
     } catch (err) {
       console.error('Download failed:', err);
       toast.error('Download failed — please try again');
     } finally {
-      setDownloading(false);
+      setDownloadingFormat(null);
     }
   };
 
@@ -266,43 +273,74 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
           </div>
         ) : null}
 
-        {/* Download — always presents an MP3/WAV picker; unavailable formats
-            are listed but disabled so users can see what's offered. */}
+        {/* Download — opens a modal with large, obvious MP3 / WAV cards. */}
         {(mp3Url || wavUrl) && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <Dialog open={downloadOpen} onOpenChange={setDownloadOpen}>
+            <DialogTrigger asChild>
               <button
-                disabled={downloading}
-                className="w-full h-10 rounded-lg bg-[#10b981] hover:bg-[#0d9668] text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+                className="w-full h-10 rounded-lg bg-[#10b981] hover:bg-[#0d9668] text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors"
               >
                 <Download className="size-4" />
-                {downloading ? 'Downloading…' : 'Download'}
-                <ChevronDown className="size-3 opacity-70" />
+                Download
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="bg-[#181c24] border-[#252a35] text-[#e8eaed] min-w-[14rem]">
-              <DropdownMenuItem
-                disabled={!mp3Url}
-                onSelect={() => mp3Url && downloadAs(mp3Url, 'mp3')}
-                className="cursor-pointer focus:bg-[#1f2430] data-[disabled]:opacity-40 data-[disabled]:cursor-not-allowed"
-              >
-                MP3
-                <span className="ml-auto text-[11px] text-[#9ca3af]">
-                  {mp3Url ? 'smaller' : 'not available'}
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={!wavUrl}
-                onSelect={() => wavUrl && downloadAs(wavUrl, 'wav')}
-                className="cursor-pointer focus:bg-[#1f2430] data-[disabled]:opacity-40 data-[disabled]:cursor-not-allowed"
-              >
-                WAV
-                <span className="ml-auto text-[11px] text-[#9ca3af]">
-                  {wavUrl ? 'original quality' : 'not available'}
-                </span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </DialogTrigger>
+            <DialogContent className="bg-[#141820] border-[#2a3040] text-[#e8eaed] sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-white text-lg">Download sound</DialogTitle>
+                <DialogDescription className="text-[#9ca3af]">
+                  {sound.title}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-2">
+                {/* MP3 option */}
+                <button
+                  type="button"
+                  disabled={!mp3Url || downloadingFormat !== null}
+                  onClick={() => mp3Url && downloadAs(mp3Url, 'mp3')}
+                  className="group relative flex flex-col items-center text-center p-5 rounded-xl border-2 border-[#2a3040] bg-[#0f1218]
+                             hover:border-[#10b981] hover:bg-[#10b981]/5 transition-colors
+                             disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[#2a3040] disabled:hover:bg-[#0f1218]"
+                >
+                  {downloadingFormat === 'mp3' ? (
+                    <Loader2 className="size-7 mb-2 text-[#10b981] animate-spin" />
+                  ) : (
+                    <FileMusic className="size-7 mb-2 text-[#10b981] group-hover:scale-110 transition-transform" />
+                  )}
+                  <div className="text-white text-base font-semibold">MP3</div>
+                  <div className="text-[11px] text-[#9ca3af] mt-1">
+                    {mp3Url ? 'Smaller file · fast' : 'Not available'}
+                  </div>
+                </button>
+
+                {/* WAV option */}
+                <button
+                  type="button"
+                  disabled={!wavUrl || downloadingFormat !== null}
+                  onClick={() => wavUrl && downloadAs(wavUrl, 'wav')}
+                  className="group relative flex flex-col items-center text-center p-5 rounded-xl border-2 border-[#2a3040] bg-[#0f1218]
+                             hover:border-[#10b981] hover:bg-[#10b981]/5 transition-colors
+                             disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[#2a3040] disabled:hover:bg-[#0f1218]"
+                >
+                  {downloadingFormat === 'wav' ? (
+                    <Loader2 className="size-7 mb-2 text-[#10b981] animate-spin" />
+                  ) : (
+                    <FileAudio className="size-7 mb-2 text-[#10b981] group-hover:scale-110 transition-transform" />
+                  )}
+                  <div className="text-white text-base font-semibold">WAV</div>
+                  <div className="text-[11px] text-[#9ca3af] mt-1">
+                    {wavUrl ? 'Original quality · lossless' : 'Not available'}
+                  </div>
+                </button>
+              </div>
+
+              {downloadingFormat && (
+                <p className="text-[12px] text-[#9ca3af] text-center">
+                  Preparing your {downloadingFormat.toUpperCase()}…
+                </p>
+              )}
+            </DialogContent>
+          </Dialog>
         )}
 
         {/* Tags */}
