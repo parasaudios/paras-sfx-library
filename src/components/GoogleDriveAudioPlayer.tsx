@@ -93,13 +93,29 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
 
   useEffect(() => {
     const a = audioRef.current;
-    if (!a) return;
+    if (!a || !srcUrl) return;
+
+    // Assign src imperatively (not via JSX) so React's reconciler never
+    // touches it on re-render. Only re-assign if the src actually changed
+    // (comparing full URL, not the ref object). Resetting src on a playing
+    // audio is what was causing playback to abort when the parent re-rendered.
+    if (a.src !== srcUrl) {
+      a.src = srcUrl;
+    }
+
     const onTime = () => setCurrentTime(a.currentTime);
     const onMeta = () => { setDuration(a.duration); setAudioLoaded(true); };
     const onEnd = () => setIsPlaying(false);
+    const onPause = () => {
+      // Keep state honest if the browser pauses us (tab backgrounded, etc.)
+      if (!a.ended) setIsPlaying(!a.paused);
+    };
+    const onPlay = () => setIsPlaying(true);
     a.addEventListener('timeupdate', onTime);
     a.addEventListener('loadedmetadata', onMeta);
     a.addEventListener('ended', onEnd);
+    a.addEventListener('pause', onPause);
+    a.addEventListener('play', onPlay);
 
     // Pause this player if another one starts (single-instance playback)
     const onOtherPlay = (e: Event) => {
@@ -115,6 +131,8 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
       a.removeEventListener('timeupdate', onTime);
       a.removeEventListener('loadedmetadata', onMeta);
       a.removeEventListener('ended', onEnd);
+      a.removeEventListener('pause', onPause);
+      a.removeEventListener('play', onPlay);
       window.removeEventListener(SFX_PLAY_EVENT, onOtherPlay);
     };
   }, [srcUrl]);
@@ -149,20 +167,43 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
   const toggle = () => {
     const a = audioRef.current;
     if (!a) return;
-    if (isPlaying) { a.pause(); setIsPlaying(false); }
-    else {
-      // Ensure src is loading before playing
-      if (a.preload === 'none') a.preload = 'auto';
-      // Pause any other card that was playing
-      broadcastPlay(a);
-      a.play().catch(() => setIsPlaying(false));
+
+    // Pause path
+    if (isPlaying && !a.paused) {
+      a.pause();
+      setIsPlaying(false);
+      return;
+    }
+
+    // Resume / play path.
+    // Make sure we still have an src loaded; some browsers may have unloaded
+    // the audio when it scrolled off screen for a long time. Reassigning src
+    // only if missing preserves the currentTime otherwise.
+    if (srcUrl && !a.src) a.src = srcUrl;
+    if (a.preload === 'none') a.preload = 'auto';
+
+    // If the clip finished, rewind so the next play starts from the beginning
+    // rather than doing nothing.
+    if (a.ended) a.currentTime = 0;
+
+    // Pause any other card that's playing
+    broadcastPlay(a);
+
+    const p = a.play();
+    if (p && typeof p.then === 'function') {
+      p.then(() => setIsPlaying(true))
+       .catch((err) => {
+         console.warn('Audio playback failed:', err);
+         setIsPlaying(false);
+       });
+    } else {
       setIsPlaying(true);
-      // Increment listen count once per sound per mount
-      // (fire-and-forget - we don't block playback on the network call)
-      if (!listenCounted.current) {
-        listenCounted.current = true;
-        void api.incrementListen(sound.id);
-      }
+    }
+
+    // Listen counter — once per mount (fire-and-forget)
+    if (!listenCounted.current) {
+      listenCounted.current = true;
+      void api.incrementListen(sound.id);
     }
   };
 
@@ -243,7 +284,11 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
           </div>
         ) : srcUrl ? (
           <div className="bg-[#0f1218] rounded-lg px-4 py-3">
-            <audio ref={audioRef} src={srcUrl} preload="none" />
+            {/* src + preload are set imperatively (see useEffect below) so
+                React can't accidentally re-sync them on re-render — which would
+                abort whatever's currently playing. playsInline keeps mobile
+                browsers from pausing when the element scrolls off-screen. */}
+            <audio ref={audioRef} preload="none" playsInline />
             <div className="flex items-center gap-3">
               <button
                 onClick={toggle}
