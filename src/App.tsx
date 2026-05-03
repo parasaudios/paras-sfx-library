@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search } from 'lucide-react';
+import { Search, Download } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { SuggestSoundFormSection } from './components/SuggestSoundFormSection';
 import { GoogleDriveAudioPlayer } from './components/GoogleDriveAudioPlayer';
+import { BulkDownloadDialog } from './components/BulkDownloadDialog';
 import { BrowseByTags } from './components/BrowseByTags';
 import { AgeVerification } from './components/AgeVerification';
 import { Toaster } from './components/ui/sonner';
@@ -23,6 +24,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<Sound[]>([]);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
@@ -117,6 +119,14 @@ export default function App() {
   useEffect(() => {
     loadSoundCount();
     loadManagedTags();
+  }, []);
+
+  // Per-sound download modals can request a bulk download via this custom
+  // event so they don't need to know about the App-level results array.
+  useEffect(() => {
+    const onRequestBulk = () => setBulkOpen(true);
+    window.addEventListener('sfx-lib:request-bulk', onRequestBulk);
+    return () => window.removeEventListener('sfx-lib:request-bulk', onRequestBulk);
   }, []);
 
   const loadSoundCount = async () => {
@@ -512,6 +522,20 @@ export default function App() {
                         )}
                       </p>
                     </div>
+                    {results.length > 0 && (
+                      <button
+                        onClick={() => setBulkOpen(true)}
+                        className="self-start sm:self-auto inline-flex items-center gap-2 h-10 px-4
+                                   rounded-lg border border-[#10b981]/40 bg-[#10b981]/10 hover:bg-[#10b981]/20
+                                   text-[#10b981] hover:text-white text-sm font-medium transition-colors"
+                      >
+                        <Download className="size-4" />
+                        Bulk download
+                        <span className="text-[11px] opacity-80">
+                          ({(isViewAll ? results.length : results.length).toLocaleString()})
+                        </span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Search bar on results page */}
@@ -607,6 +631,15 @@ export default function App() {
           </p>
         </div>
       </footer>
+
+      {/* Bulk download dialog (opened from the standalone button or from the
+          per-sound modal via the 'sfx-lib:request-bulk' window event) */}
+      <BulkDownloadDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        sounds={results}
+        contextLabel={isViewAll ? 'all results' : (searchQuery ? 'search results' : 'sounds')}
+      />
 
       {/* Toast notifications */}
       <Toaster />

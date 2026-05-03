@@ -384,6 +384,23 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
                   Preparing your {downloadingFormat.toUpperCase()}…
                 </p>
               )}
+
+              {/* Bulk option — fires a window event the App listens for so we
+                  don't need to thread the full results array down through props. */}
+              <div className="pt-3 border-t border-[#252a35] text-center">
+                <button
+                  type="button"
+                  disabled={downloadingFormat !== null}
+                  onClick={() => {
+                    setDownloadOpen(false);
+                    window.dispatchEvent(new CustomEvent('sfx-lib:request-bulk'));
+                  }}
+                  className="text-[13px] text-[#10b981] hover:text-white inline-flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <Download className="size-3.5" />
+                  Or bulk download all sounds in this view
+                </button>
+              </div>
             </DialogContent>
           </Dialog>
         )}
