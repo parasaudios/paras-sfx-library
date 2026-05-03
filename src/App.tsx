@@ -510,32 +510,16 @@ export default function App() {
                 transition={{ duration: 0.5 }}
               >
                 <div className="mb-6 sm:mb-8">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                    <div>
-                      <h2 className="text-white mb-1 text-xl sm:text-2xl">
-                        {searchQuery ? `Search Results for "${searchQuery}"` : 'All Sounds'}
-                      </h2>
-                      <p className="text-slate-400 text-sm sm:text-base">
-                        Found {isViewAll ? totalSounds : results.length} tracks
-                        {isViewAll && results.length < totalSounds && (
-                          <span className="text-[#10b981]"> (showing {results.length})</span>
-                        )}
-                      </p>
-                    </div>
-                    {results.length > 0 && (
-                      <button
-                        onClick={() => setBulkOpen(true)}
-                        className="self-start sm:self-auto inline-flex items-center gap-2 h-10 px-4
-                                   rounded-lg border border-[#10b981]/40 bg-[#10b981]/10 hover:bg-[#10b981]/20
-                                   text-[#10b981] hover:text-white text-sm font-medium transition-colors"
-                      >
-                        <Download className="size-4" />
-                        Bulk download
-                        <span className="text-[11px] opacity-80">
-                          ({(isViewAll ? results.length : results.length).toLocaleString()})
-                        </span>
-                      </button>
-                    )}
+                  <div className="mb-4">
+                    <h2 className="text-white mb-1 text-xl sm:text-2xl">
+                      {searchQuery ? `Search Results for "${searchQuery}"` : 'All Sounds'}
+                    </h2>
+                    <p className="text-slate-400 text-sm sm:text-base">
+                      Found {isViewAll ? totalSounds : results.length} tracks
+                      {isViewAll && results.length < totalSounds && (
+                        <span className="text-[#10b981]"> (showing {results.length})</span>
+                      )}
+                    </p>
                   </div>
 
                   {/* Search bar on results page */}
@@ -558,6 +542,25 @@ export default function App() {
                       Search
                     </Button>
                   </div>
+
+                  {/* Bulk download — sits below the search bar so it's never
+                      hidden behind the fixed top nav and is always discoverable. */}
+                  {results.length > 0 && (
+                    <div className="flex justify-end mt-3">
+                      <button
+                        onClick={() => setBulkOpen(true)}
+                        className="inline-flex items-center gap-2 h-10 px-4
+                                   rounded-lg border border-[#10b981]/40 bg-[#10b981]/10 hover:bg-[#10b981]/20
+                                   text-[#10b981] hover:text-white text-sm font-medium transition-colors"
+                      >
+                        <Download className="size-4" />
+                        Bulk download
+                        <span className="text-[11px] opacity-80">
+                          ({results.length.toLocaleString()}{isViewAll && results.length < totalSounds ? ` of ${totalSounds.toLocaleString()}` : ''})
+                        </span>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Browse by Tags on Results Page */}

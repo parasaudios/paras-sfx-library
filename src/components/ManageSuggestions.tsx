@@ -35,7 +35,10 @@ export function ManageSuggestions() {
     const suggestion = suggestions.find(s => s.id === id);
     if (!suggestion) return;
 
-    const result = await api.updateSuggestion(id, { isRead: !suggestion.isRead });
+    // The DB stores `status` (pending|reviewed); the frontend exposes `isRead`
+    // for clarity, so map across the boundary here.
+    const newStatus = suggestion.isRead ? 'pending' : 'reviewed';
+    const result = await api.updateSuggestion(id, { status: newStatus });
     if (result) {
       const updated = suggestions.map(s =>
         s.id === id ? { ...s, isRead: !s.isRead } : s

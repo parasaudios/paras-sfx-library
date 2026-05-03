@@ -8,7 +8,7 @@
 // even for huge selections. Each chunk becomes its own '...-part-NN-of-MM'
 // zip download with a small gap between to let the browser save each one.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import JSZip from 'jszip';
 import { Download, FileMusic, FileAudio, Loader2, X } from 'lucide-react';
 import {
@@ -62,14 +62,18 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
     done: 0, total: 0, label: '',
     chunkIndex: 0, chunkTotal: 0,
   });
-  const [aborted, setAborted] = useState(false);
+  // Use a ref for the abort flag so the in-flight workers can read the
+  // current value through their closure. State would freeze at the value
+  // captured when the workers started.
+  const abortedRef = useRef(false);
+  const [, forceRerender] = useState(0);
 
   // Reset transient state when the dialog closes
   useEffect(() => {
     if (!open) {
       setDownloading(null);
       setProgress({ done: 0, total: 0, label: '', chunkIndex: 0, chunkTotal: 0 });
-      setAborted(false);
+      abortedRef.current = false;
     }
   }, [open]);
 
@@ -87,7 +91,6 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
     format: 'mp3' | 'wav',
     chunkIdx: number,
     chunkTotal: number,
-    abortRef: { aborted: boolean },
   ): Promise<number> {
     const zip = new JSZip();
     const usedNames = new Set<string>();
@@ -96,7 +99,7 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
     let cursor = 0;
     const workers = Array.from({ length: PARALLEL }, async () => {
       while (cursor < chunk.length) {
-        if (abortRef.aborted) return;
+        if (abortedRef.current) return;
         const idx = cursor++;
         const s = chunk[idx];
         const path = format === 'mp3' ? s.mp3_path! : s.wav_path!;
@@ -122,7 +125,7 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
       }
     });
     await Promise.all(workers);
-    if (abortRef.aborted || added === 0) return 0;
+    if (abortedRef.current || added === 0) return 0;
 
     setProgress(p => ({ ...p, label: `Compressing zip ${chunkIdx + 1} / ${chunkTotal}…` }));
     const blob = await zip.generateAsync({
@@ -157,27 +160,23 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
       chunks.push(pool.slice(i, i + CHUNK_SIZE));
     }
 
+    abortedRef.current = false;
     setDownloading(format);
-    setAborted(false);
     setProgress({
       done: 0, total: pool.length, label: 'Starting…',
       chunkIndex: 0, chunkTotal: chunks.length,
     });
 
-    // Use a ref-style object so workers see updates to abort
-    const abortRef = { aborted: false };
-    const abortWatcher = setInterval(() => { if (aborted) abortRef.aborted = true; }, 100);
-
     let totalAdded = 0;
     try {
       for (let i = 0; i < chunks.length; i++) {
-        if (abortRef.aborted) break;
+        if (abortedRef.current) break;
         setProgress(p => ({ ...p, chunkIndex: i }));
-        const n = await buildZipFor(chunks[i], format, i, chunks.length, abortRef);
+        const n = await buildZipFor(chunks[i], format, i, chunks.length);
         totalAdded += n;
         // Brief pause between successive zip downloads so each one can
         // be saved by the browser before the next click fires.
-        if (i < chunks.length - 1 && !abortRef.aborted) {
+        if (i < chunks.length - 1 && !abortedRef.current) {
           await new Promise(r => setTimeout(r, CHUNK_GAP_MS));
         }
       }
@@ -185,12 +184,10 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
       console.error('Bulk download failed:', err);
       toast.error('Bulk download failed — try a smaller selection');
       setDownloading(null);
-      clearInterval(abortWatcher);
       return;
     }
-    clearInterval(abortWatcher);
 
-    if (abortRef.aborted) {
+    if (abortedRef.current) {
       setDownloading(null);
       toast.message('Bulk download cancelled');
       return;
@@ -292,10 +289,11 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
             )}
             <button
               type="button"
-              onClick={() => setAborted(true)}
-              className="text-[12px] text-[#9ca3af] hover:text-white inline-flex items-center gap-1"
+              onClick={() => { abortedRef.current = true; forceRerender(n => n + 1); }}
+              disabled={abortedRef.current}
+              className="text-[12px] text-[#9ca3af] hover:text-white inline-flex items-center gap-1 disabled:opacity-50"
             >
-              <X className="size-3" /> Cancel
+              <X className="size-3" /> {abortedRef.current ? 'Cancelling…' : 'Cancel'}
             </button>
           </div>
         )}

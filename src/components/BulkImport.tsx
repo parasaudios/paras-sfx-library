@@ -32,13 +32,27 @@ export function BulkImport({ onImportComplete }: BulkImportProps) {
       let successCount = 0;
       let errorCount = 0;
 
+      let skippedNoFile = 0;
       for (const sound of sounds) {
+        // Reject rows that don't reference a file in storage. Audio files have
+        // to be uploaded separately (use scripts/bulk-import.mjs for that).
+        if (!sound.mp3_path && !sound.wav_path) {
+          errorCount++;
+          skippedNoFile++;
+          continue;
+        }
         try {
           const result = await api.createSound({
             title: sound.title || 'Untitled',
             tags: Array.isArray(sound.tags) ? sound.tags : [],
+            mp3_path: sound.mp3_path,
+            wav_path: sound.wav_path,
+            has_wav: !!sound.wav_path,
             microphone: sound.microphone || sound.equipment,
             format: sound.format,
+            category: sound.category,
+            file_size: sound.file_size,
+            nsfw: !!sound.nsfw,
           });
 
           if (result) {
@@ -52,7 +66,10 @@ export function BulkImport({ onImportComplete }: BulkImportProps) {
         }
       }
 
-      toast.success(`Imported ${successCount} sound(s). ${errorCount > 0 ? `${errorCount} failed.` : ''}`);
+      const noFileNote = skippedNoFile > 0
+        ? ` (${skippedNoFile} skipped — missing mp3_path/wav_path)`
+        : '';
+      toast.success(`Imported ${successCount} sound(s). ${errorCount > 0 ? `${errorCount} failed.${noFileNote}` : ''}`);
       setJsonInput('');
       onImportComplete();
     } catch (error) {
