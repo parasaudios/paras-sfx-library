@@ -1,12 +1,12 @@
-// Modal that bulk-downloads a list of sounds as a single ZIP.
+// Modal that bulk-downloads a list of sounds as one or more ZIPs.
 //
 // Lets the user pick MP3 (smaller) or WAV (original quality), shows a
 // running progress bar as files are fetched and added to the zip, and
-// triggers a single ZIP download via a same-origin blob: URL.
+// triggers downloads via same-origin blob: URLs.
 //
-// Capped at MAX_BULK so we don't blow the browser's memory on really big
-// libraries. Above the cap, the user is warned and can either reduce the
-// set or proceed with a partial zip.
+// Sounds are sliced into chunks of CHUNK_SIZE so memory stays bounded
+// even for huge selections. Each chunk becomes its own '...-part-NN-of-MM'
+// zip download with a small gap between to let the browser save each one.
 
 import { useEffect, useState } from 'react';
 import JSZip from 'jszip';
@@ -260,7 +260,7 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
           </button>
           <button
             type="button"
-            disabled={!!downloading || tooMany || availableWav.length === 0}
+            disabled={!!downloading || availableWav.length === 0}
             onClick={() => bulk('wav')}
             className="group flex flex-col items-center text-center p-5 rounded-xl border-2 border-[#2a3040] bg-[#0f1218]
                        hover:border-[#10b981] hover:bg-[#10b981]/5 transition-colors
