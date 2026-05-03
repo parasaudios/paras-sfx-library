@@ -20,9 +20,11 @@ import * as api from '../utils/api';
 import type { Sound } from '../types/index';
 
 const STORAGE_PREFIX = `${supabaseUrl}/storage/v1/object/public/sounds/`;
-const MAX_BULK = 500;        // hard cap - above this we ask the user to narrow
-const SOFT_WARN = 100;       // show "this might be slow / large" warning above
-const PARALLEL = 4;          // concurrent fetches
+const CHUNK_SIZE = 100;      // each zip holds at most this many sounds
+const SOFT_WARN = 200;       // multi-zip warning shown above this many sounds
+const PARALLEL = 4;          // concurrent fetches per chunk
+const CHUNK_GAP_MS = 800;    // delay between chunk-zip downloads (lets the
+                             // browser save each one before the next click)
 
 interface Props {
   open: boolean;
@@ -56,14 +58,17 @@ function estimateBytes(sounds: Sound[], format: 'mp3' | 'wav'): number {
 
 export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 'sounds' }: Props) {
   const [downloading, setDownloading] = useState<'mp3' | 'wav' | null>(null);
-  const [progress, setProgress] = useState({ done: 0, total: 0, label: '' });
+  const [progress, setProgress] = useState({
+    done: 0, total: 0, label: '',
+    chunkIndex: 0, chunkTotal: 0,
+  });
   const [aborted, setAborted] = useState(false);
 
   // Reset transient state when the dialog closes
   useEffect(() => {
     if (!open) {
       setDownloading(null);
-      setProgress({ done: 0, total: 0, label: '' });
+      setProgress({ done: 0, total: 0, label: '', chunkIndex: 0, chunkTotal: 0 });
       setAborted(false);
     }
   }, [open]);
@@ -72,41 +77,34 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
   const availableMp3 = sounds.filter(s => !!s.mp3_path);
   const availableWav = sounds.filter(s => s.has_wav && !!s.wav_path);
 
-  const tooMany = sounds.length > MAX_BULK;
-  const warnLarge = sounds.length > SOFT_WARN && !tooMany;
+  const willChunk = sounds.length > CHUNK_SIZE;
+  const totalChunks = Math.ceil(sounds.length / CHUNK_SIZE);
+  const veryLarge = sounds.length > SOFT_WARN;
 
-  async function bulk(format: 'mp3' | 'wav') {
-    if (downloading) return;
-    const pool = format === 'mp3' ? availableMp3 : availableWav;
-    if (pool.length === 0) {
-      toast.error(`No ${format.toUpperCase()} files available in this set`);
-      return;
-    }
-    if (tooMany) return;
-
-    setDownloading(format);
-    setAborted(false);
-    setProgress({ done: 0, total: pool.length, label: 'Starting…' });
-
+  // Build one zip from a slice of the pool. Returns count of files added.
+  async function buildZipFor(
+    chunk: Sound[],
+    format: 'mp3' | 'wav',
+    chunkIdx: number,
+    chunkTotal: number,
+    abortRef: { aborted: boolean },
+  ): Promise<number> {
     const zip = new JSZip();
     const usedNames = new Set<string>();
-    let abortedLocal = false;
-    let successCount = 0;
+    let added = 0;
 
-    // Small parallelism so the browser can pipeline a few requests at once
     let cursor = 0;
     const workers = Array.from({ length: PARALLEL }, async () => {
-      while (cursor < pool.length) {
-        if (abortedLocal) return;
+      while (cursor < chunk.length) {
+        if (abortRef.aborted) return;
         const idx = cursor++;
-        const s = pool[idx];
+        const s = chunk[idx];
         const path = format === 'mp3' ? s.mp3_path! : s.wav_path!;
         const url = STORAGE_PREFIX + path;
         try {
           const res = await fetch(url);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const blob = await res.blob();
-          // Make the in-zip filename safe + unique
           let name = `${s.title}.${format}`.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_');
           let n = 2;
           while (usedNames.has(name)) {
@@ -115,7 +113,7 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
           }
           usedNames.add(name);
           zip.file(name, blob);
-          successCount++;
+          added++;
         } catch (err) {
           console.warn(`Skipped ${s.title}:`, err);
         } finally {
@@ -123,57 +121,95 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
         }
       }
     });
-
-    // Watch the abort flag so the active workers can bail
-    const abortWatcher = setInterval(() => {
-      if (aborted) abortedLocal = true;
-    }, 100);
-
     await Promise.all(workers);
+    if (abortRef.aborted || added === 0) return 0;
+
+    setProgress(p => ({ ...p, label: `Compressing zip ${chunkIdx + 1} / ${chunkTotal}…` }));
+    const blob = await zip.generateAsync({
+      type: 'blob', compression: 'STORE', streamFiles: true,
+    });
+
+    // Trigger a save for this chunk
+    const ts = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+    const partLabel = chunkTotal > 1 ? `-part-${String(chunkIdx + 1).padStart(2, '0')}-of-${chunkTotal}` : '';
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = `paras-sfx-${contextLabel.replace(/\s+/g, '-')}-${format}${partLabel}-${ts}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+    return added;
+  }
+
+  async function bulk(format: 'mp3' | 'wav') {
+    if (downloading) return;
+    const pool = format === 'mp3' ? availableMp3 : availableWav;
+    if (pool.length === 0) {
+      toast.error(`No ${format.toUpperCase()} files available in this set`);
+      return;
+    }
+
+    // Slice the pool into chunks of CHUNK_SIZE
+    const chunks: Sound[][] = [];
+    for (let i = 0; i < pool.length; i += CHUNK_SIZE) {
+      chunks.push(pool.slice(i, i + CHUNK_SIZE));
+    }
+
+    setDownloading(format);
+    setAborted(false);
+    setProgress({
+      done: 0, total: pool.length, label: 'Starting…',
+      chunkIndex: 0, chunkTotal: chunks.length,
+    });
+
+    // Use a ref-style object so workers see updates to abort
+    const abortRef = { aborted: false };
+    const abortWatcher = setInterval(() => { if (aborted) abortRef.aborted = true; }, 100);
+
+    let totalAdded = 0;
+    try {
+      for (let i = 0; i < chunks.length; i++) {
+        if (abortRef.aborted) break;
+        setProgress(p => ({ ...p, chunkIndex: i }));
+        const n = await buildZipFor(chunks[i], format, i, chunks.length, abortRef);
+        totalAdded += n;
+        // Brief pause between successive zip downloads so each one can
+        // be saved by the browser before the next click fires.
+        if (i < chunks.length - 1 && !abortRef.aborted) {
+          await new Promise(r => setTimeout(r, CHUNK_GAP_MS));
+        }
+      }
+    } catch (err) {
+      console.error('Bulk download failed:', err);
+      toast.error('Bulk download failed — try a smaller selection');
+      setDownloading(null);
+      clearInterval(abortWatcher);
+      return;
+    }
     clearInterval(abortWatcher);
 
-    if (abortedLocal) {
+    if (abortRef.aborted) {
       setDownloading(null);
       toast.message('Bulk download cancelled');
       return;
     }
-    if (successCount === 0) {
+    if (totalAdded === 0) {
       setDownloading(null);
       toast.error('All downloads failed');
       return;
     }
 
-    setProgress(p => ({ ...p, label: 'Compressing zip…' }));
-
-    try {
-      // STORE = no compression. Audio files are already compressed (mp3) or
-      // would gain nothing meaningful from zip's deflate (wav). Skipping
-      // compression keeps memory + time low.
-      const blob = await zip.generateAsync(
-        { type: 'blob', compression: 'STORE', streamFiles: true },
-        (m) => setProgress(p => ({ ...p, label: `Compressing… ${Math.floor(m.percent)}%` }))
-      );
-
-      const ts = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
-      const objectUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = objectUrl;
-      a.download = `paras-sfx-${contextLabel.replace(/\s+/g, '-')}-${format}-${ts}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
-
-      toast.success(`Downloaded ${successCount} ${format.toUpperCase()} files`);
-      // Best-effort: bump download counters for each sound that succeeded
-      for (const s of pool) void api.incrementDownload(s.id);
-      onOpenChange(false);
-    } catch (err) {
-      console.error('Zip generation failed:', err);
-      toast.error('Failed to build the zip — try a smaller set');
-    } finally {
-      setDownloading(null);
-    }
+    toast.success(
+      chunks.length > 1
+        ? `Downloaded ${totalAdded} ${format.toUpperCase()} files in ${chunks.length} zips`
+        : `Downloaded ${totalAdded} ${format.toUpperCase()} files`
+    );
+    // Best-effort counter bumps
+    for (const s of pool) void api.incrementDownload(s.id);
+    onOpenChange(false);
+    setDownloading(null);
   }
 
   const mp3Bytes = estimateBytes(sounds, 'mp3');
@@ -192,23 +228,23 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
           </DialogDescription>
         </DialogHeader>
 
-        {tooMany && (
-          <div className="px-3 py-2 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-200 text-[13px]">
-            That's a lot — please narrow your selection to {MAX_BULK.toLocaleString()} or fewer
-            sounds (currently {sounds.length.toLocaleString()}). Try filtering by tag or search term first.
+        {willChunk && (
+          <div className="px-3 py-2 rounded-md bg-[#10b981]/10 border border-[#10b981]/30 text-[#a7f3d0] text-[13px]">
+            Files will be split across <b>{totalChunks} zips</b> of up to {CHUNK_SIZE} sounds each.
+            Your browser may ask permission to save multiple files — click <b>Allow</b>.
           </div>
         )}
-        {warnLarge && (
+        {veryLarge && (
           <div className="px-3 py-2 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-200 text-[13px]">
-            Heads up: {sounds.length} sounds is a lot. The download could take a few minutes
-            and the ZIP may be very large.
+            Heads up: {sounds.length.toLocaleString()} sounds is a lot. This could take a few
+            minutes, and you'll get {totalChunks} separate downloads.
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-3 py-2">
           <button
             type="button"
-            disabled={!!downloading || tooMany || availableMp3.length === 0}
+            disabled={!!downloading || availableMp3.length === 0}
             onClick={() => bulk('mp3')}
             className="group flex flex-col items-center text-center p-5 rounded-xl border-2 border-[#2a3040] bg-[#0f1218]
                        hover:border-[#10b981] hover:bg-[#10b981]/5 transition-colors
@@ -249,6 +285,11 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
             <div className="h-2 bg-[#0f1218] rounded overflow-hidden">
               <div className="h-full bg-[#10b981] transition-all" style={{ width: `${pct}%` }} />
             </div>
+            {progress.chunkTotal > 1 && (
+              <div className="text-[11px] text-[#6b7280] tabular-nums">
+                Zip {progress.chunkIndex + 1} of {progress.chunkTotal}
+              </div>
+            )}
             <button
               type="button"
               onClick={() => setAborted(true)}
