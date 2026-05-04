@@ -191,6 +191,11 @@ docker run --rm -v supabase_storage_Para_SFX_Library:/target -v "${PWD}\backups\
 ### Storage buckets
 
 - `sounds` — primary bucket for all SFX files (mp3 + wav). Public READ via storage API.
+- `archives` — pre-built whole-library zips, manifest, and metadata. Public READ. Rebuilt nightly by `scripts/build-archives.ps1`. Contents:
+  - `paras-sfx-library-mp3.zip` — every active mp3 (~900 MB)
+  - `paras-sfx-library-wav.zip` — every active wav (~5 GB)
+  - `paras-sfx-library-manifest.txt` — newline-separated public URLs (for `aria2c -i` / `wget -i`)
+  - `paras-sfx-library-metadata.json` — `{ built_at, total_sounds, archives: [...], manifest: {...} }`
 
 ### Postgres functions (RPC)
 
@@ -333,6 +338,14 @@ scripts/                             # See "Operations Scripts" section below
 | `normalize-titles.mjs` | Splits compressed words (Openingclosing → Opening Closing), inserts space between letter+digit (Plaps29 → Plaps 29), normalizes Footsteps formatting, preserves mic names (ZoomH8 stays intact). Use `--dry` to preview. |
 | `fix-marker-titles.mjs` | One-time: cleaned up "THRUST_Marker 01" auto-titles into proper sound names |
 
+### Pre-built archive operations
+
+| Script | Purpose |
+|---|---|
+| `build-archives.ps1` | Rebuilds the `archives/` bucket contents (mp3 zip, wav zip, manifest.txt, metadata.json). Atomic: writes a NEW version-uuid first, verifies via `zipfile.testzip()`, swaps the storage.objects pointer, then deletes the old version file. If anything fails mid-build the existing archives keep serving. Logs to `scripts/build-archives.log`. |
+| `build-archives.py` | Helper called by build-archives.ps1 inside the storage container. Reads `(source-path, archive-name)` pairs from stdin, streams them into a `ZIP_STORED` zip on disk so memory stays bounded regardless of total size. |
+| `install-archive-task.ps1` | One-time: registers a Windows Task Scheduler entry (`ParaSFX-BuildArchives`) that runs `build-archives.ps1` daily at 03:00. No admin needed. Catches up via `StartWhenAvailable` if the PC was off at 3 AM. |
+
 ### Backup
 
 | Script | Purpose |
@@ -367,7 +380,20 @@ The component name is historical (sounds used to be Google Drive URLs); it's now
 
 ## Bulk download system (`BulkDownloadDialog.tsx`)
 
-### How it works
+The modal offers two paths depending on what the user wants:
+
+### Path 1 — pre-built whole-library zip (one-click)
+
+When the dialog opens, it fetches `archives/paras-sfx-library-metadata.json`. If that file exists it shows a "Download the entire library" panel at the top with two big links:
+
+- **MP3 (all)** — single-click download, browser-native resume, ~900 MB
+- **WAV (all)** — same, ~5 GB
+
+Plus a "Power users" line linking to `manifest.txt` for `aria2c -i` / `wget -i` use.
+
+If the metadata fetch fails, the panel just doesn't render — the dialog falls back to Path 2 only.
+
+### Path 2 — chunked client-zip of the current selection
 - Receives `sounds: Sound[]` prop (the current results array — search results, view-all, etc.)
 - User picks MP3 or WAV in the modal
 - Pool is **chunked into batches of 100** (`CHUNK_SIZE = 100`)

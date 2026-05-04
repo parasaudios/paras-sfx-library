@@ -68,6 +68,21 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
   const abortedRef = useRef(false);
   const [, forceRerender] = useState(0);
 
+  // Pre-built archives metadata (loaded from /archives/paras-sfx-library-metadata.json).
+  // null = not loaded yet, undefined = no archives available
+  type ArchiveInfo = { archive_name: string; bytes: number; files: number; url: string };
+  type ArchiveMeta = { built_at: string; total_sounds: number; archives: ArchiveInfo[]; manifest?: { url: string; urls: number; bytes: number } };
+  const [archiveMeta, setArchiveMeta] = useState<ArchiveMeta | null | undefined>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const url = `${supabaseUrl}/storage/v1/object/public/archives/paras-sfx-library-metadata.json`;
+    fetch(url)
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(data => setArchiveMeta(data as ArchiveMeta))
+      .catch(() => setArchiveMeta(undefined));  // archives not available yet
+  }, [open]);
+
   // Reset transient state when the dialog closes
   useEffect(() => {
     if (!open) {
@@ -224,6 +239,69 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
             Files are packaged into a single ZIP and saved to your downloads folder.
           </DialogDescription>
         </DialogHeader>
+
+        {/* PRE-BUILT WHOLE-LIBRARY ARCHIVES — fastest path for "give me everything".
+            One click, one HTTP download with native browser resume support.
+            Built nightly by scripts/build-archives.ps1; only the pointer flips
+            when a new build lands so the URL is always serving a verified zip. */}
+        {archiveMeta && archiveMeta.archives && archiveMeta.archives.length > 0 && (
+          <div className="rounded-lg border border-[#10b981]/30 bg-[#10b981]/5 p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="text-white text-sm font-semibold">Download the entire library</div>
+                <div className="text-[11px] text-[#9ca3af]">
+                  Pre-built archive of all {archiveMeta.total_sounds.toLocaleString()} sounds —
+                  one file, native browser resume.
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {archiveMeta.archives.map(a => {
+                const isMp3 = a.archive_name.endsWith('-mp3.zip');
+                return (
+                  <a
+                    key={a.archive_name}
+                    href={a.url}
+                    download
+                    className="flex flex-col items-center text-center px-3 py-2 rounded-md
+                               bg-[#0f1218] border border-[#2a3040] hover:border-[#10b981] hover:bg-[#10b981]/10
+                               transition-colors"
+                  >
+                    <span className="text-white text-sm font-semibold">
+                      {isMp3 ? 'MP3 (all)' : 'WAV (all)'}
+                    </span>
+                    <span className="text-[10px] text-[#9ca3af]">
+                      {a.files.toLocaleString()} files · {bytesToSize(a.bytes)}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+            {archiveMeta.manifest && (
+              <div className="text-[11px] text-[#6b7280] pt-1">
+                Power users:{' '}
+                <a
+                  href={archiveMeta.manifest.url}
+                  className="text-[#10b981] hover:underline"
+                  download
+                >
+                  manifest.txt ({archiveMeta.manifest.urls.toLocaleString()} URLs)
+                </a>
+                {' '}for use with{' '}
+                <code className="text-[#9ca3af]">aria2c -i</code> or{' '}
+                <code className="text-[#9ca3af]">wget -i</code>.
+                Built {new Date(archiveMeta.built_at).toLocaleDateString()}.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* DIVIDER between the "everything" path and the "current selection" path */}
+        {archiveMeta && archiveMeta.archives && archiveMeta.archives.length > 0 && (
+          <div className="text-[11px] text-[#6b7280] text-center my-1">
+            — or zip just this selection —
+          </div>
+        )}
 
         {willChunk && (
           <div className="px-3 py-2 rounded-md bg-[#10b981]/10 border border-[#10b981]/30 text-[#a7f3d0] text-[13px]">
