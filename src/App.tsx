@@ -169,6 +169,8 @@ export default function App() {
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return;
     setLoading(true);
+    setIsViewAll(false);
+    cascadeTokenRef.current++;  // cancel any in-flight view-all cascade
     try {
       // Server-side search (tsvector GIN index, usually <20ms for <50 results).
       // Falls back to client-side if the RPC returns nothing AND we already
@@ -214,20 +216,51 @@ export default function App() {
     setResults([]);
   };
 
+  // Cancel any in-flight cascade if the user navigates away or starts a new search
+  const cascadeTokenRef = useRef(0);
+
   const handleShowAll = async () => {
     setLoading(true);
     setIsViewAll(true);
     setSearchQuery('');
     setCurrentPage(0);
+    const myToken = ++cascadeTokenRef.current;
+
     try {
-      const { data, total } = await api.getSounds(0, 30);
+      // First page renders immediately so the user sees results in <300ms
+      const PAGE_SIZE = 60;
+      const { data, total } = await api.getSounds(0, PAGE_SIZE);
+      if (myToken !== cascadeTokenRef.current) return;
       const filteredSounds = filterNSFWSounds(data, ageVerified);
       setResults(filteredSounds);
       setTotalSounds(total);
       setShowResults(true);
+      setLoading(false);
+
+      // Background cascade: fetch remaining pages back-to-back so the full
+      // library is loaded in by itself. Tiny delay between pages keeps the
+      // UI responsive and the API from being hammered. Cancellable via the
+      // cascade token if the user kicks off a new search/view.
+      let page = 1;
+      while (page * PAGE_SIZE < total) {
+        if (myToken !== cascadeTokenRef.current) return;
+        await new Promise(r => setTimeout(r, 150));
+        if (myToken !== cascadeTokenRef.current) return;
+        try {
+          const next = await api.getSounds(page, PAGE_SIZE);
+          if (myToken !== cascadeTokenRef.current) return;
+          if (next.data.length === 0) break;
+          const more = filterNSFWSounds(next.data, ageVerified);
+          setResults(prev => [...prev, ...more]);
+          setCurrentPage(page);
+          page++;
+        } catch (err) {
+          console.warn('Cascade page failed, will keep what we have:', err);
+          break;
+        }
+      }
     } catch (error) {
       console.error('Failed to load sounds:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -554,10 +587,7 @@ export default function App() {
                                    text-[#10b981] hover:text-white text-sm font-medium transition-colors"
                       >
                         <Download className="size-4" />
-                        Bulk download
-                        <span className="text-[11px] opacity-80">
-                          ({results.length.toLocaleString()}{isViewAll && results.length < totalSounds ? ` of ${totalSounds.toLocaleString()}` : ''})
-                        </span>
+                        Bulk Download
                       </button>
                     </div>
                   )}
@@ -578,7 +608,7 @@ export default function App() {
                 ) : results.length > 0 ? (
                   <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-6 sm:mt-8">
-                      {(isViewAll ? results : results.slice(0, visibleCount)).map((result, index) => (
+                      {results.map((result, index) => (
                         <GoogleDriveAudioPlayer
                           key={result.id}
                           sound={result}
@@ -586,9 +616,14 @@ export default function App() {
                         />
                       ))}
                     </div>
-                    {(isViewAll ? results.length < totalSounds : visibleCount < results.length) && (
-                      <div ref={sentinelRef} className="h-10 flex items-center justify-center">
-                        {loadingMore && <p className="text-slate-500 text-sm">Loading more...</p>}
+                    {/* Cascade indicator while the rest of the library streams in.
+                        Only meaningful in view-all mode; search results all
+                        arrive in a single RPC and are rendered immediately. */}
+                    {isViewAll && results.length < totalSounds && (
+                      <div className="h-12 flex items-center justify-center mt-4">
+                        <p className="text-[#9ca3af] text-sm">
+                          Loading more sounds… ({results.length.toLocaleString()} of {totalSounds.toLocaleString()})
+                        </p>
                       </div>
                     )}
                   </>

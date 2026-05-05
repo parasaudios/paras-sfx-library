@@ -232,11 +232,9 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
     <Dialog open={open} onOpenChange={(o) => !downloading && onOpenChange(o)}>
       <DialogContent className="bg-[#141820] border-[#2a3040] text-[#e8eaed] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-white text-lg">
-            Bulk download — {sounds.length.toLocaleString()} {contextLabel}
-          </DialogTitle>
+          <DialogTitle className="text-white text-lg">Bulk Download</DialogTitle>
           <DialogDescription className="text-[#9ca3af]">
-            Files are packaged into a single ZIP and saved to your downloads folder.
+            Pick a format. Files are packaged into a ZIP and saved to your downloads folder.
           </DialogDescription>
         </DialogHeader>
 
@@ -246,14 +244,9 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
             when a new build lands so the URL is always serving a verified zip. */}
         {archiveMeta && archiveMeta.archives && archiveMeta.archives.length > 0 && (
           <div className="rounded-lg border border-[#10b981]/30 bg-[#10b981]/5 p-3 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <div className="text-white text-sm font-semibold">Download the entire library</div>
-                <div className="text-[11px] text-[#9ca3af]">
-                  Pre-built archive of all {archiveMeta.total_sounds.toLocaleString()} sounds —
-                  one file, native browser resume.
-                </div>
-              </div>
+            <div className="text-white text-sm font-semibold">Download the entire library</div>
+            <div className="text-[11px] text-[#9ca3af]">
+              All {archiveMeta.total_sounds.toLocaleString()} sounds in one file. Browser-native resume if your connection drops.
             </div>
             <div className="grid grid-cols-2 gap-2">
               {archiveMeta.archives.map(a => {
@@ -267,52 +260,31 @@ export function BulkDownloadDialog({ open, onOpenChange, sounds, contextLabel = 
                                bg-[#0f1218] border border-[#2a3040] hover:border-[#10b981] hover:bg-[#10b981]/10
                                transition-colors"
                   >
-                    <span className="text-white text-sm font-semibold">
-                      {isMp3 ? 'MP3 (all)' : 'WAV (all)'}
-                    </span>
-                    <span className="text-[10px] text-[#9ca3af]">
-                      {a.files.toLocaleString()} files · {bytesToSize(a.bytes)}
-                    </span>
+                    <span className="text-white text-sm font-semibold">{isMp3 ? 'MP3' : 'WAV'}</span>
+                    <span className="text-[10px] text-[#9ca3af]">{bytesToSize(a.bytes)}</span>
                   </a>
                 );
               })}
             </div>
-            {archiveMeta.manifest && (
-              <div className="text-[11px] text-[#6b7280] pt-1">
-                Power users:{' '}
-                <a
-                  href={archiveMeta.manifest.url}
-                  className="text-[#10b981] hover:underline"
-                  download
-                >
-                  manifest.txt ({archiveMeta.manifest.urls.toLocaleString()} URLs)
-                </a>
-                {' '}for use with{' '}
-                <code className="text-[#9ca3af]">aria2c -i</code> or{' '}
-                <code className="text-[#9ca3af]">wget -i</code>.
-                Built {new Date(archiveMeta.built_at).toLocaleDateString()}.
-              </div>
-            )}
           </div>
         )}
 
         {/* DIVIDER between the "everything" path and the "current selection" path */}
         {archiveMeta && archiveMeta.archives && archiveMeta.archives.length > 0 && (
           <div className="text-[11px] text-[#6b7280] text-center my-1">
-            — or zip just this selection —
+            or zip just the {sounds.length.toLocaleString()} sounds you have loaded
           </div>
         )}
 
         {willChunk && (
           <div className="px-3 py-2 rounded-md bg-[#10b981]/10 border border-[#10b981]/30 text-[#a7f3d0] text-[13px]">
-            Files will be split across <b>{totalChunks} zips</b> of up to {CHUNK_SIZE} sounds each.
+            This selection will be split across <b>{totalChunks} zips</b> of up to {CHUNK_SIZE} sounds each.
             Your browser may ask permission to save multiple files — click <b>Allow</b>.
           </div>
         )}
         {veryLarge && (
           <div className="px-3 py-2 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-200 text-[13px]">
-            Heads up: {sounds.length.toLocaleString()} sounds is a lot. This could take a few
-            minutes, and you'll get {totalChunks} separate downloads.
+            Heads up: that's a lot. Could take a few minutes and produce {totalChunks} separate downloads.
           </div>
         )}
 
