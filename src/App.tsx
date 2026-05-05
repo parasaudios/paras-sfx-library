@@ -46,6 +46,10 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalSounds, setTotalSounds] = useState(0);
   const [isViewAll, setIsViewAll] = useState(false);
+  // True while the view-all background cascade is fetching pages. Distinct
+  // from `results.length < totalSounds` because the latter stays true even
+  // after the cascade finishes if NSFW sounds got filtered out client-side.
+  const [isCascading, setIsCascading] = useState(false);
   const loadingMoreRef = useRef(false);
   const currentPageRef = useRef(0);
   const totalSoundsRef = useRef(0);
@@ -170,6 +174,7 @@ export default function App() {
     if (!searchQuery.trim()) return;
     setLoading(true);
     setIsViewAll(false);
+    setIsCascading(false);
     cascadeTokenRef.current++;  // cancel any in-flight view-all cascade
     try {
       // Server-side search (tsvector GIN index, usually <20ms for <50 results).
@@ -212,8 +217,10 @@ export default function App() {
     setShowResults(false);
     setSearchQuery('');
     setIsViewAll(false);
+    setIsCascading(false);
     setCurrentPage(0);
     setResults([]);
+    cascadeTokenRef.current++;  // cancel any in-flight view-all cascade
   };
 
   // Cancel any in-flight cascade if the user navigates away or starts a new search
@@ -222,6 +229,7 @@ export default function App() {
   const handleShowAll = async () => {
     setLoading(true);
     setIsViewAll(true);
+    setIsCascading(true);
     setSearchQuery('');
     setCurrentPage(0);
     const myToken = ++cascadeTokenRef.current;
@@ -262,6 +270,13 @@ export default function App() {
     } catch (error) {
       console.error('Failed to load sounds:', error);
       setLoading(false);
+    } finally {
+      // Only clear if THIS cascade is still the active one. If the user
+      // started a new search/view while we were running, the new cascade
+      // owns the flag now and we mustn't clobber it.
+      if (myToken === cascadeTokenRef.current) {
+        setIsCascading(false);
+      }
     }
   };
 
@@ -549,7 +564,7 @@ export default function App() {
                     </h2>
                     <p className="text-slate-400 text-sm sm:text-base">
                       Found {isViewAll ? totalSounds : results.length} tracks
-                      {isViewAll && results.length < totalSounds && (
+                      {isViewAll && isCascading && results.length < totalSounds && (
                         <span className="text-[#10b981]"> (showing {results.length})</span>
                       )}
                     </p>
@@ -618,8 +633,11 @@ export default function App() {
                     </div>
                     {/* Cascade indicator while the rest of the library streams in.
                         Only meaningful in view-all mode; search results all
-                        arrive in a single RPC and are rendered immediately. */}
-                    {isViewAll && results.length < totalSounds && (
+                        arrive in a single RPC and are rendered immediately.
+                        Keyed off isCascading (not result counts) so the
+                        indicator disappears when the cascade actually finishes,
+                        even if NSFW filtering left results.length < totalSounds. */}
+                    {isViewAll && isCascading && (
                       <div className="h-12 flex items-center justify-center mt-4">
                         <p className="text-[#9ca3af] text-sm">
                           Loading more sounds… ({results.length.toLocaleString()} of {totalSounds.toLocaleString()})
