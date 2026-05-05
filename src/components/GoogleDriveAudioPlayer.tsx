@@ -14,12 +14,17 @@ import { toast } from 'sonner';
 import { capitalizeWords } from '../utils/formatters';
 import { formatTagForDisplay } from '../utils/tagUtils';
 import { supabaseUrl } from '../utils/supabase/info';
+import { isNSFW } from '../utils/ageVerification';
 import * as api from '../utils/api';
 import type { Sound } from '../types/index';
 
 interface GoogleDriveAudioPlayerProps {
   sound: Sound;
   index: number;
+  isAgeVerified: boolean;
+  // Card calls this when an NSFW sound needs age confirmation before playing
+  // or downloading. App.tsx stashes the callback and runs it on modal confirm.
+  onRequestAgeVerification: (onVerified: () => void) => void;
 }
 
 const getFileId = (url: string | null | undefined): string | null => {
@@ -64,7 +69,12 @@ function broadcastPlay(audio: HTMLAudioElement) {
   window.dispatchEvent(new CustomEvent(SFX_PLAY_EVENT, { detail: audio }));
 }
 
-function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps) {
+function GoogleDriveAudioPlayerComponent({
+  sound,
+  isAgeVerified,
+  onRequestAgeVerification,
+}: GoogleDriveAudioPlayerProps) {
+  const nsfw = useMemo(() => isNSFW(sound.tags || []), [sound.tags]);
   const audioRef = useRef<HTMLAudioElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -164,26 +174,15 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
     return () => io.disconnect();
   }, []);
 
-  const toggle = () => {
+  // Actual play logic, separated from the gate check so we can call it
+  // either directly (clean sounds) or as a deferred callback after the
+  // age modal confirms (NSFW sounds).
+  const doPlay = () => {
     const a = audioRef.current;
     if (!a) return;
 
-    // Pause path
-    if (isPlaying && !a.paused) {
-      a.pause();
-      setIsPlaying(false);
-      return;
-    }
-
-    // Resume / play path.
-    // Make sure we still have an src loaded; some browsers may have unloaded
-    // the audio when it scrolled off screen for a long time. Reassigning src
-    // only if missing preserves the currentTime otherwise.
     if (srcUrl && !a.src) a.src = srcUrl;
     if (a.preload === 'none') a.preload = 'auto';
-
-    // If the clip finished, rewind so the next play starts from the beginning
-    // rather than doing nothing.
     if (a.ended) a.currentTime = 0;
 
     // Pause any other card that's playing
@@ -205,6 +204,26 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
       listenCounted.current = true;
       void api.incrementListen(sound.id);
     }
+  };
+
+  const toggle = () => {
+    const a = audioRef.current;
+    if (!a) return;
+
+    // Pause path always allowed
+    if (isPlaying && !a.paused) {
+      a.pause();
+      setIsPlaying(false);
+      return;
+    }
+
+    // NSFW + unverified -> defer play behind the age modal
+    if (nsfw && !isAgeVerified) {
+      onRequestAgeVerification(doPlay);
+      return;
+    }
+
+    doPlay();
   };
 
   const seek = (v: number[]) => {
@@ -239,7 +258,7 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
   const [downloadingFormat, setDownloadingFormat] = useState<'mp3' | 'wav' | null>(null);
   const [downloadOpen, setDownloadOpen] = useState(false);
 
-  const downloadAs = async (url: string, ext: 'mp3' | 'wav') => {
+  const doDownload = async (url: string, ext: 'mp3' | 'wav') => {
     if (downloadingFormat) return;
     setDownloadingFormat(ext);
     try {
@@ -265,6 +284,14 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
     }
   };
 
+  const downloadAs = (url: string, ext: 'mp3' | 'wav') => {
+    if (nsfw && !isAgeVerified) {
+      onRequestAgeVerification(() => { void doDownload(url, ext); });
+      return;
+    }
+    void doDownload(url, ext);
+  };
+
   const dur = audioLoaded && duration > 0 ? duration : (sound.duration_seconds || 0);
   const channelLabel = sound.channels === 1 ? 'Mono' : sound.channels === 2 ? 'Stereo' : null;
 
@@ -272,10 +299,21 @@ function GoogleDriveAudioPlayerComponent({ sound }: GoogleDriveAudioPlayerProps)
     <div ref={cardRef} className="bg-[#181c24] border border-[#252a35] rounded-xl overflow-hidden hover:border-[#2f3645] transition-colors" onMouseEnter={handleHover}>
       <div className="p-5 space-y-3">
 
-        {/* Title */}
-        <h3 className="text-[#e8eaed] text-[15px] font-semibold leading-tight">
-          {capitalizeWords(sound.title)}
-        </h3>
+        {/* Title + optional 18+ badge for NSFW sounds */}
+        <div className="flex items-start gap-2">
+          <h3 className="text-[#e8eaed] text-[15px] font-semibold leading-tight flex-1 min-w-0">
+            {capitalizeWords(sound.title)}
+          </h3>
+          {nsfw && (
+            <span
+              className="shrink-0 inline-flex items-center text-[10px] font-semibold tracking-wide
+                         px-1.5 py-0.5 rounded border border-[#f87171]/40 bg-[#f87171]/10 text-[#fca5a5]"
+              title="Adult content — age verification required to play or download"
+            >
+              18+
+            </span>
+          )}
+        </div>
 
         {/* Player */}
         {isGDrive && embedUrl ? (

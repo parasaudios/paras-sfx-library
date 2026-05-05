@@ -15,7 +15,7 @@ import { Toaster } from './components/ui/sonner';
 const Login          = lazy(() => import('./components/Login').then(m => ({ default: m.Login })));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 import { searchSounds } from './utils/searchUtils';
-import { isAgeVerified, setAgeVerified, filterNSFWSounds, isNSFW } from './utils/ageVerification';
+import { isAgeVerified, setAgeVerified } from './utils/ageVerification';
 import * as api from './utils/api';
 import type { Sound } from './types/index';
 
@@ -41,7 +41,9 @@ export default function App() {
   const [managedTags, setManagedTags] = useState<string[]>([]);
   const [ageVerified, setAgeVerifiedState] = useState(isAgeVerified());
   const [showAgeVerification, setShowAgeVerification] = useState(false);
-  const [pendingSearch, setPendingSearch] = useState<string | null>(null);
+  // When a card asks the user to verify before playing/downloading, we stash
+  // the action here so handleAgeVerified can run it after the modal confirms.
+  const pendingAgeActionRef = useRef<(() => void) | null>(null);
   const [visibleCount, setVisibleCount] = useState(30);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalSounds, setTotalSounds] = useState(0);
@@ -188,16 +190,9 @@ export default function App() {
         matchedResults = searchSounds(allSounds, searchQuery);
       }
 
-      // NSFW gate - pause the render and ask for age verification if needed
-      const hasNSFWContent = matchedResults.some(sound => isNSFW(sound.tags));
-      if (hasNSFWContent && !ageVerified) {
-        setPendingSearch(searchQuery);
-        setShowAgeVerification(true);
-        return;
-      }
-
-      const filteredResults = filterNSFWSounds(matchedResults, ageVerified);
-      setResults(filteredResults);
+      // NSFW sounds stay in the result list. The age gate fires per-card
+      // when the user actually tries to play or download an NSFW sound.
+      setResults(matchedResults);
       setVisibleCount(30);
       setShowResults(true);
     } catch (error) {
@@ -205,7 +200,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, allSounds, ageVerified]);
+  }, [searchQuery, allSounds]);
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -235,12 +230,12 @@ export default function App() {
     const myToken = ++cascadeTokenRef.current;
 
     try {
-      // First page renders immediately so the user sees results in <300ms
+      // First page renders immediately so the user sees results in <300ms.
+      // NSFW sounds stay in the result list; the age gate fires per-card.
       const PAGE_SIZE = 60;
       const { data, total } = await api.getSounds(0, PAGE_SIZE);
       if (myToken !== cascadeTokenRef.current) return;
-      const filteredSounds = filterNSFWSounds(data, ageVerified);
-      setResults(filteredSounds);
+      setResults(data);
       setTotalSounds(total);
       setShowResults(true);
       setLoading(false);
@@ -258,8 +253,7 @@ export default function App() {
           const next = await api.getSounds(page, PAGE_SIZE);
           if (myToken !== cascadeTokenRef.current) return;
           if (next.data.length === 0) break;
-          const more = filterNSFWSounds(next.data, ageVerified);
-          setResults(prev => [...prev, ...more]);
+          setResults(prev => [...prev, ...next.data]);
           setCurrentPage(page);
           page++;
         } catch (err) {
@@ -313,56 +307,38 @@ export default function App() {
       return;
     }
 
-    // Tag click -> same server-side search path as the text search box
+    // Tag click -> same server-side search path as the text search box.
+    // NSFW sounds stay in the list; per-card age gate handles play/download.
     setSearchQuery(tag);
     const matchedResults = await api.searchSoundsRemote(tag, 100);
-
-    const hasNSFWContent = matchedResults.some(sound => isNSFW(sound.tags));
-    if (hasNSFWContent && !ageVerified) {
-      setPendingSearch(tag);
-      setShowAgeVerification(true);
-      return;
-    }
-
-    const filteredResults = filterNSFWSounds(matchedResults, ageVerified);
-    setResults(filteredResults);
+    setResults(matchedResults);
     setVisibleCount(30);
     setShowResults(true);
   };
 
-  // Re-run a deferred search through the server RPC (used by the age gate)
-  const runPendingSearch = async (query: string, nsfwOk: boolean) => {
-    const matchedResults = await api.searchSoundsRemote(query, 100);
-    const filteredResults = filterNSFWSounds(matchedResults, nsfwOk);
-    setResults(filteredResults);
-    setSearchQuery(query);
-    setShowResults(true);
-  };
+  // Per-card request to verify age before playing/downloading an NSFW sound.
+  // The card passes a callback that runs the gated action; we stash it,
+  // open the modal, and run it on confirm. Memoized so React.memo on the
+  // audio player keeps working.
+  const requestAgeVerification = useCallback((onVerified: () => void) => {
+    pendingAgeActionRef.current = onVerified;
+    setShowAgeVerification(true);
+  }, []);
 
   // Handle age verification confirm
-  const handleAgeVerified = async () => {
+  const handleAgeVerified = () => {
     setAgeVerified(true);
     setAgeVerifiedState(true);
     setShowAgeVerification(false);
-
-    if (pendingSearch) {
-      if (pendingSearch === '__VIEW_ALL__') {
-        handleShowAll();
-      } else {
-        await runPendingSearch(pendingSearch, true);
-      }
-      setPendingSearch(null);
-    }
+    const action = pendingAgeActionRef.current;
+    pendingAgeActionRef.current = null;
+    if (action) action();
   };
 
-  // Handle age verification decline
-  const handleAgeDeclined = async () => {
+  // Handle age verification decline — drop the pending action quietly
+  const handleAgeDeclined = () => {
     setShowAgeVerification(false);
-
-    if (pendingSearch && pendingSearch !== '__VIEW_ALL__') {
-      await runPendingSearch(pendingSearch, false);
-    }
-    setPendingSearch(null);
+    pendingAgeActionRef.current = null;
   };
 
   // Fallback UI while lazy-loaded admin chunks are fetched
@@ -628,6 +604,8 @@ export default function App() {
                           key={result.id}
                           sound={result}
                           index={index}
+                          isAgeVerified={ageVerified}
+                          onRequestAgeVerification={requestAgeVerification}
                         />
                       ))}
                     </div>
