@@ -19,6 +19,41 @@ services:
           - /auth/v1/verify
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
 
   - name: auth-v1-open-callback
     url: http://auth:9999/callback
@@ -29,6 +64,41 @@ services:
           - /auth/v1/callback
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
 
   - name: auth-v1-open-authorize
     url: http://auth:9999/authorize
@@ -39,6 +109,41 @@ services:
           - /auth/v1/authorize
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
 
   - name: auth-v1
     url: http://auth:9999/
@@ -49,6 +154,41 @@ services:
           - /auth/v1/
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
       - name: request-transformer
         config:
           add:
@@ -68,6 +208,41 @@ services:
           - /rest/v1/
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
       - name: request-transformer
         config:
           add:
@@ -86,6 +261,41 @@ services:
           - /rest-admin/v1/
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
 
   # ======================= GraphQL =======================
   - name: graphql-v1
@@ -97,6 +307,41 @@ services:
           - /graphql/v1
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
       - name: request-transformer
         config:
           add:
@@ -118,6 +363,41 @@ services:
           - /realtime/v1/
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
 
   - name: realtime-v1-rest
     url: http://realtime:4000/api
@@ -129,6 +409,41 @@ services:
           - /realtime/v1/api
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
       - name: request-transformer
         config:
           add:
@@ -148,6 +463,41 @@ services:
           - /storage/v1/s3/
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
 
   - name: storage-v1
     url: http://storage:5000/
@@ -158,6 +508,41 @@ services:
           - /storage/v1/
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
       - name: request-transformer
         config:
           add:
@@ -178,6 +563,41 @@ services:
           - /functions/v1/
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
       - name: request-transformer
         config:
           add:
@@ -197,6 +617,41 @@ services:
           - /.well-known/oauth-authorization-server
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
 
   - name: pg-meta
     url: http://meta:8080/
@@ -207,6 +662,41 @@ services:
           - /pg/
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
 
   - name: analytics-v1
     url: http://analytics:4000/
@@ -217,6 +707,41 @@ services:
           - /analytics/v1/
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
 
   - name: mcp
     url: http://studio:3000/api/mcp
@@ -227,3 +752,38 @@ services:
           - /mcp
     plugins:
       - name: cors
+        config:
+          origins:
+            - "https://parasfx.com"
+            - "https://www.parasfx.com"
+            - "https://sfx-lib.pages.dev"
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - HEAD
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Cache-Control
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - X-Requested-With
+            - Range
+            - apikey
+            - x-client-info
+            - x-supabase-api-version
+            - prefer
+          exposed_headers:
+            - Content-Range
+            - X-Total-Count
+          credentials: false
+          max_age: 3600
