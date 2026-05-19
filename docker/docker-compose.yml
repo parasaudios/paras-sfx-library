@@ -58,7 +58,9 @@ services:
       PGRST_DB_URI: postgresql://authenticator:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       PGRST_DB_SCHEMAS: public,graphql_public
       PGRST_DB_EXTRA_SEARCH_PATH: public,extensions
-      PGRST_DB_MAX_ROWS: 20000
+      # Was 20000 — way too loose given anon SELECT is granted on multiple tables.
+      # 200 covers the largest paged list (60-item view-all cascade) with room.
+      PGRST_DB_MAX_ROWS: 200
       PGRST_DB_ANON_ROLE: anon
       PGRST_JWT_SECRET: '{"keys":[{"kty":"oct","k":"${JWT_SECRET_B64}"}]}'
       PGRST_ADMIN_SERVER_PORT: 3001
@@ -232,11 +234,20 @@ services:
 
   # ═══════════════════════════════════════════════════════════════════════════
   # Studio (Dashboard)
+  #
+  # SECURITY: Studio has NO built-in authentication. Anyone with localhost
+  # access (malware, USB attack, etc.) gets full DB control via Studio.
+  # Gated behind the `admin` compose profile so `docker compose up -d`
+  # leaves it stopped. To use it briefly:
+  #     docker compose --profile admin up -d studio
+  #     # ...do work in browser at http://127.0.0.1:54343 ...
+  #     docker compose stop studio
   # ═══════════════════════════════════════════════════════════════════════════
   studio:
     container_name: supabase_studio_Para_SFX_Library
     image: public.ecr.aws/supabase/studio:2026.03.23-sha-b7847b7
     restart: unless-stopped
+    profiles: [admin]
     ports:
       - "127.0.0.1:${STUDIO_PORT:-54343}:3000/tcp"
     depends_on:
