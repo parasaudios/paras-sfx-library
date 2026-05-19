@@ -113,12 +113,19 @@ services:
       GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED: true
       GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL: 10
       GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_REAUTHENTICATION: true
-      GOTRUE_RATE_LIMIT_EMAIL_SENT: 360000
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: 30
       GOTRUE_RATE_LIMIT_SMS_SENT: 30
       GOTRUE_RATE_LIMIT_ANONYMOUS_USERS: 30
       GOTRUE_RATE_LIMIT_TOKEN_REFRESH: 150
       GOTRUE_RATE_LIMIT_OTP: 30
       GOTRUE_RATE_LIMIT_VERIFY: 30
+      # Cloudflare Turnstile CAPTCHA on every auth endpoint that creates a
+      # session (login, signup, etc). Frontend supplies the token via
+      # signInWithPassword({ options: { captchaToken } }). GoTrue verifies
+      # against Turnstile using the secret below.
+      GOTRUE_SECURITY_CAPTCHA_ENABLED: ${GOTRUE_SECURITY_CAPTCHA_ENABLED:-false}
+      GOTRUE_SECURITY_CAPTCHA_PROVIDER: ${GOTRUE_SECURITY_CAPTCHA_PROVIDER:-turnstile}
+      GOTRUE_SECURITY_CAPTCHA_SECRET: ${GOTRUE_SECURITY_CAPTCHA_SECRET:-}
 
   # ═══════════════════════════════════════════════════════════════════════════
   # Realtime

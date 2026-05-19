@@ -21,12 +21,13 @@ function resolveLoginIdentifier(identifier: string): string {
   return mapped || trimmed; // fall through to whatever they typed (will fail auth cleanly)
 }
 
-export async function signIn(identifier: string, password: string) {
+export async function signIn(identifier: string, password: string, captchaToken?: string) {
   const email = resolveLoginIdentifier(identifier);
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
+    options: captchaToken ? { captchaToken } : undefined,
   });
 
   if (error) throw error;

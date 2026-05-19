@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { toast } from 'sonner';
 import * as api from '../utils/api';
+import { turnstileSiteKey } from '../utils/supabase/info';
 
 interface LoginProps {
   onLogin: () => void;
@@ -14,19 +16,33 @@ export function Login({ onLogin }: LoginProps) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
+    // Reject early if Turnstile is wired but the user hasn't solved it yet.
+    // (The widget usually auto-solves in a second or two; this only fires if
+    // the user submits within that window or the challenge failed.)
+    if (turnstileSiteKey && !captchaToken) {
+      toast.error('Please wait for the security check to complete');
+      return;
+    }
+
+    setLoading(true);
     try {
-      await api.signIn(identifier, password);
+      await api.signIn(identifier, password, captchaToken || undefined);
       toast.success('Login successful!');
       onLogin();
     } catch (error: any) {
       const msg = error?.message || '';
       const safeMsg = msg.includes('admin privileges') ? msg : 'Invalid credentials';
       toast.error(safeMsg);
+      // Turnstile tokens are single-use — refresh after every attempt so the
+      // user can retry without reloading.
+      setCaptchaToken(null);
+      turnstileRef.current?.reset();
     } finally {
       setLoading(false);
     }
@@ -71,6 +87,22 @@ export function Login({ onLogin }: LoginProps) {
                 disabled={loading}
               />
             </div>
+
+            {/* Cloudflare Turnstile — invisible most of the time in 'managed'
+                mode; auto-solves for legitimate visitors, challenges suspicious
+                ones. Renders nothing if the site key isn't set (local dev). */}
+            {turnstileSiteKey && (
+              <div className="flex justify-center">
+                <Turnstile
+                  ref={turnstileRef}
+                  siteKey={turnstileSiteKey}
+                  options={{ theme: 'dark', size: 'flexible' }}
+                  onSuccess={setCaptchaToken}
+                  onError={() => setCaptchaToken(null)}
+                  onExpire={() => setCaptchaToken(null)}
+                />
+              </div>
+            )}
 
             <Button
               type="submit"

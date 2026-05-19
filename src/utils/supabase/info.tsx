@@ -15,3 +15,12 @@ if (!url || !anonKey) {
 
 export const supabaseUrl: string = url;
 export const publicAnonKey: string = anonKey;
+
+// Cloudflare Turnstile public site key. Optional — if unset, the login form
+// renders without a captcha widget AND the signIn helper omits the
+// captchaToken option. GoTrue will still reject the request because the
+// server-side GOTRUE_SECURITY_CAPTCHA_ENABLED flag is on, but failing
+// gracefully here makes local-dev (where you may not bother with Turnstile)
+// less painful.
+export const turnstileSiteKey: string | undefined =
+  import.meta.env.VITE_TURNSTILE_SITE_KEY || undefined;
